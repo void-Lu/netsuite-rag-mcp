@@ -9,4 +9,5 @@ exclude:
   - .rag-index
 chroma_path: .rag-index/chroma
 collection_name: netsuite_notes
-embedding_model: sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2
+embedding_model: BAAI/bge-m3
+embedding_cache_path: .models

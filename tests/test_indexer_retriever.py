@@ -4,7 +4,35 @@ from pathlib import Path
 
 from netsuite_rag_mcp.indexer import index_vault
 from netsuite_rag_mcp.models import Chunk
-from netsuite_rag_mcp.vector_store import ChromaVectorStore, FakeEmbedder
+from netsuite_rag_mcp.vector_store import ChromaVectorStore, FakeEmbedder, SentenceTransformerEmbedder
+
+
+def test_sentence_transformer_embedder_uses_cache_folder(monkeypatch, tmp_path: Path):
+    calls = {}
+
+    class StubSentenceTransformer:
+        def __init__(self, model_name: str, cache_folder: str | None = None):
+            calls["model_name"] = model_name
+            calls["cache_folder"] = cache_folder
+
+        def encode(self, texts: list[str], normalize_embeddings: bool = False):
+            calls["normalize_embeddings"] = normalize_embeddings
+
+            class StubEmbedding:
+                def tolist(self):
+                    return [1.0, 0.0]
+
+            return [StubEmbedding() for _ in texts]
+
+    monkeypatch.setattr("netsuite_rag_mcp.vector_store.SentenceTransformer", StubSentenceTransformer)
+
+    embedder = SentenceTransformerEmbedder("BAAI/bge-m3", cache_folder=tmp_path / ".models")
+    embeddings = embedder.embed(["订单同步"])
+
+    assert calls["model_name"] == "BAAI/bge-m3"
+    assert calls["cache_folder"] == str(tmp_path / ".models")
+    assert calls["normalize_embeddings"] is True
+    assert embeddings == [[1.0, 0.0]]
 
 
 def test_vector_store_upsert_query_and_reset(tmp_path: Path):

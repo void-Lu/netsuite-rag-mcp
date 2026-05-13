@@ -36,7 +36,9 @@ def index_vault(
 
     # Create embedder if not provided
     if embedder is None:
-        selected_embedder = SentenceTransformerEmbedder(config.embedding_model)
+        selected_embedder = SentenceTransformerEmbedder(
+            config.embedding_model, cache_folder=config.embedding_cache_path
+        )
     else:
         selected_embedder = embedder
 

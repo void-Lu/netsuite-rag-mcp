@@ -75,7 +75,7 @@ def get_index_status_tool(vault_root: str | None = None) -> dict[str, Any]:
     store = ChromaVectorStore(
         config.chroma_path,
         config.collection_name,
-        SentenceTransformerEmbedder(config.embedding_model),
+        SentenceTransformerEmbedder(config.embedding_model, cache_folder=config.embedding_cache_path),
     )
     count = store.count()
     return {

@@ -15,6 +15,7 @@ class RagConfig:
     chroma_path: Path
     collection_name: str
     embedding_model: str
+    embedding_cache_path: Path
 
 
 @dataclass(frozen=True)

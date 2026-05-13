@@ -24,8 +24,9 @@ class Embedder(Protocol):
 class SentenceTransformerEmbedder:
     """Wrapper around SentenceTransformer model."""
 
-    def __init__(self, model_name: str):
-        self.model = SentenceTransformer(model_name)
+    def __init__(self, model_name: str, cache_folder: str | Path | None = None):
+        kwargs = {"cache_folder": str(cache_folder)} if cache_folder is not None else {}
+        self.model = SentenceTransformer(model_name, **kwargs)
 
     def embed(self, texts: list[str]) -> list[list[float]]:
         """Embed texts using SentenceTransformer and return normalized embeddings as lists."""

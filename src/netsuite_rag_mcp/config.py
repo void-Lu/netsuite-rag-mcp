@@ -11,7 +11,8 @@ DEFAULT_INCLUDE = ["projects", "knowledge"]
 DEFAULT_EXCLUDE = {".git", ".obsidian", ".superpowers", ".rag-index"}
 DEFAULT_CHROMA_PATH = ".rag-index/chroma"
 DEFAULT_COLLECTION = "netsuite_notes"
-DEFAULT_EMBEDDING_MODEL = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
+DEFAULT_EMBEDDING_MODEL = "BAAI/bge-m3"
+DEFAULT_EMBEDDING_CACHE_PATH = ".models"
 
 
 def load_config(vault_root: str | Path, config_path: str | Path | None = None) -> RagConfig:
@@ -32,6 +33,12 @@ def load_config(vault_root: str | Path, config_path: str | Path | None = None) -
     include_paths = [(resolved_root / value) for value in include_values]
     exclude_names = set(raw.get("exclude", sorted(DEFAULT_EXCLUDE)))
     chroma_path = resolved_root / raw.get("chroma_path", DEFAULT_CHROMA_PATH)
+    embedding_cache_value = Path(raw.get("embedding_cache_path", DEFAULT_EMBEDDING_CACHE_PATH)).expanduser()
+    embedding_cache_path = (
+        embedding_cache_value
+        if embedding_cache_value.is_absolute()
+        else resolved_root / embedding_cache_value
+    )
 
     return RagConfig(
         vault_root=resolved_root,
@@ -40,4 +47,5 @@ def load_config(vault_root: str | Path, config_path: str | Path | None = None) -
         chroma_path=chroma_path,
         collection_name=str(raw.get("collection_name", DEFAULT_COLLECTION)),
         embedding_model=str(raw.get("embedding_model", DEFAULT_EMBEDDING_MODEL)),
+        embedding_cache_path=embedding_cache_path,
     )
