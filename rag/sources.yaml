@@ -1,0 +1,12 @@
+vault_root: .
+include:
+  - projects
+  - knowledge
+exclude:
+  - .git
+  - .obsidian
+  - .superpowers
+  - .rag-index
+chroma_path: .rag-index/chroma
+collection_name: netsuite_notes
+embedding_model: sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2

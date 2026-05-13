@@ -1,0 +1,37 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+*.egg
+dist/
+build/
+.eggs/
+
+# Virtual environment
+.venv/
+venv/
+env/
+
+# RAG index data (regenerated from vault)
+.rag-index/
+
+# IDE (keep .vscode/mcp.json as template)
+.vscode/*
+!.vscode/mcp.json
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Model cache (downloaded automatically)
+.cache/

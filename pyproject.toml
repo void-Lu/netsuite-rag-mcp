@@ -1,0 +1,44 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "netsuite-rag-mcp"
+version = "0.1.0"
+description = "Local MCP server for NetSuite Obsidian RAG — index your vault, search & ask with semantic retrieval"
+readme = "README.md"
+requires-python = ">=3.11"
+license = "MIT"
+authors = [
+    { name = "NetSuite RAG MCP Contributors" },
+]
+keywords = ["netsuite", "obsidian", "rag", "mcp", "chromadb", "semantic-search"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+dependencies = [
+    "chromadb>=0.5.23",
+    "mcp>=1.2.0",
+    "PyYAML>=6.0.2",
+    "sentence-transformers>=3.3.1",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3.4",
+]
+
+[project.scripts]
+netsuite-rag-mcp = "netsuite_rag_mcp.server:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
