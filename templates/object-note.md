@@ -1,21 +1,28 @@
 ---
 type: object
-project:
+project: project-a
 object_type: savedsearch
-related_records: []
+object_id: customsearch_example
+related_records: [salesorder]
 status: active
-tags: [netsuite]
+tags: [netsuite, object]
 ---
 
-# Saved Search - search名称
+# Object - Example Object
 
 ## 关联需求
 - 禅道: []
 
 ## 业务目的
+说明该 NetSuite Object 支撑的业务流程。
 
-## 条件 Filters
-
-## 结果 Results
+## 关键字段或条件
+| 字段 | 说明 |
+|---|---|
+| internalid | 示例主键 |
 
 ## 使用位置
+- 相关脚本：`customscript_example`
+
+## 维护注意事项
+- 修改前确认影响范围。

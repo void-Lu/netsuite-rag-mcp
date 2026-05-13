@@ -41,3 +41,78 @@ def test_object_template_contains_required_fields():
         "## 使用位置",
     ]:
         assert field in text
+
+
+def test_requirement_template_contains_required_fields():
+    text = read_template("requirement-note.md")
+
+    for field in [
+        "type: requirement",
+        "project:",
+        "zentao_urls:",
+        "related_records:",
+        "related_script_ids:",
+        "related_objects:",
+        "status:",
+        "tags:",
+        "## 禅道链接",
+        "## 业务背景",
+        "## 验收标准",
+    ]:
+        assert field in text
+
+
+def test_troubleshooting_template_contains_required_fields():
+    text = read_template("troubleshooting-note.md")
+
+    for field in [
+        "type: troubleshooting",
+        "project:",
+        "author:",
+        "related_records:",
+        "related_script_ids:",
+        "status:",
+        "tags:",
+        "## 现象",
+        "## 排查过程",
+        "## 根因",
+        "## 解决方案",
+    ]:
+        assert field in text
+
+
+def test_decision_template_contains_required_fields():
+    text = read_template("decision-note.md")
+
+    for field in [
+        "type: decision",
+        "project:",
+        "author:",
+        "decision_status:",
+        "related_records:",
+        "related_script_ids:",
+        "decision_date:",
+        "tags:",
+        "## 背景",
+        "## 可选方案",
+        "## 决策",
+        "## 理由",
+    ]:
+        assert field in text
+
+
+def test_knowledge_template_contains_required_fields():
+    text = read_template("knowledge-note.md")
+
+    for field in [
+        "type: knowledge",
+        "topic:",
+        "author:",
+        "related_records:",
+        "related_script_types:",
+        "tags:",
+        "## 适用场景",
+        "## 推荐做法",
+        "## 常见问题",
+    ]:
+        assert field in text

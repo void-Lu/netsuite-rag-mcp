@@ -121,16 +121,18 @@ embedding_cache_path: .models
 
 ## 📝 Obsidian 笔记模板
 
-项目提供 4 种 NetSuite 笔记模板（`templates/` 目录），复制到你的 Vault 中使用：
+项目提供 6 种 NetSuite 笔记模板（`templates/` 目录），复制到你的 Vault 中使用：
 
 | 模板 | 用途 | 关键 Frontmatter 字段 |
 | --- | --- | --- |
-| `script-note.md` | SuiteScript 脚本笔记 | `type`, `script_type`, `script_id`, `deployment_id` |
-| `object-note.md` | NetSuite Object 笔记 | `type`, `object_type`, `related_records` |
-| `requirement-note.md` | 需求文档 | `type`, `zentao_urls`, `related_script_ids` |
+| `script-note.md` | SuiteScript 脚本笔记 | `type`, `script_type`, `script_id`, `deployment_id`, `related_records` |
+| `object-note.md` | NetSuite Object 笔记 | `type`, `object_type`, `object_id`, `related_records` |
+| `requirement-note.md` | 需求文档 | `type`, `zentao_urls`, `related_script_ids`, `related_objects` |
 | `troubleshooting-note.md` | 排坑记录 | `type`, `related_records`, `related_script_ids` |
+| `decision-note.md` | 技术决策记录 | `type`, `decision_status`, `decision_date`, `related_script_ids` |
+| `knowledge-note.md` | 知识/经验笔记 | `type`, `topic`, `related_script_types`, `related_records` |
 
-所有模板共享以下元数据过滤字段：
+多数模板共享以下元数据过滤字段：
 
 - `project` — 项目名称
 - `status` — active / inactive
@@ -169,7 +171,9 @@ pytest
 │   ├── script-note.md
 │   ├── object-note.md
 │   ├── requirement-note.md
-│   └── troubleshooting-note.md
+│   ├── troubleshooting-note.md
+│   ├── decision-note.md
+│   └── knowledge-note.md
 ├── tests/                      # 测试用例
 ├── pyproject.toml              # 项目配置 + 依赖
 ├── .gitignore
