@@ -2,8 +2,8 @@
 type: requirement
 project: project-a
 zentao_urls: []
-related_records: [salesorder]
-related_script_ids: []
+related_objects: [salesorder]
+related_scripts: []
 related_objects: []
 status: active
 tags: [netsuite, requirement]

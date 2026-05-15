@@ -2,8 +2,8 @@
 type: troubleshooting
 project: project-a
 author: developer-name
-related_records: [salesorder]
-related_script_ids: []
+related_objects: [salesorder]
+related_scripts: []
 status: active
 tags: [netsuite, troubleshooting]
 ---

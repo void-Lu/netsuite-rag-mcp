@@ -7,7 +7,9 @@ from typing import Any
 from mcp.server.fastmcp import FastMCP
 
 from netsuite_rag_mcp.config import load_config
+from netsuite_rag_mcp.indexer import index_sources as run_index_sources
 from netsuite_rag_mcp.indexer import index_vault as run_index_vault
+from netsuite_rag_mcp.manifest import read_manifest
 from netsuite_rag_mcp.retriever import ask_netsuite_rag as run_ask_netsuite_rag
 from netsuite_rag_mcp.retriever import search_netsuite_knowledge as run_search_netsuite_knowledge
 from netsuite_rag_mcp.vector_store import ChromaVectorStore, Embedder, SentenceTransformerEmbedder
@@ -31,19 +33,42 @@ def index_vault_tool(
     return run_index_vault(root, mode=mode, embedder=embedder)
 
 
+def index_sources_tool(
+    vault_root: str | None = None,
+    source_names: list[str] | None = None,
+    source_kind: str | None = None,
+    mode: str = "incremental",
+    embedder: Embedder | None = None,
+) -> dict[str, Any]:
+    root = _default_vault_root(vault_root)
+    if mode not in {"full", "incremental"}:
+        return {"error": "mode must be 'full' or 'incremental'", "mode": mode}
+    try:
+        return run_index_sources(
+            root, source_names=source_names, source_kind=source_kind, mode=mode, embedder=embedder
+        )
+    except Exception as exc:
+        return {"error": str(exc)}
+
+
 def search_netsuite_knowledge_tool(
     question: str,
     vault_root: str | None = None,
     project: str | None = None,
     script_type: str | None = None,
-    related_records: str | None = None,
-    related_script_ids: str | None = None,
+    related_objects: str | None = None,
+    related_scripts: str | None = None,
     object_type: str | None = None,
     status: str | None = None,
+    source_kind: str | None = None,
+    source_name: str | None = None,
     top_k: int = 5,
 ) -> dict[str, Any]:
-    filters = _build_filters(project, script_type, related_records, related_script_ids, object_type, status)
-    return run_search_netsuite_knowledge(_default_vault_root(vault_root), question, filters=filters, top_k=top_k)
+    filters = _build_filters(project, script_type, related_objects, related_scripts, object_type, status, source_kind, source_name)
+    return run_search_netsuite_knowledge(
+        _default_vault_root(vault_root), question, filters=filters, top_k=top_k,
+        source_kind=source_kind, source_name=source_name,
+    )
 
 
 def ask_netsuite_rag_tool(
@@ -51,57 +76,111 @@ def ask_netsuite_rag_tool(
     vault_root: str | None = None,
     project: str | None = None,
     script_type: str | None = None,
-    related_records: str | None = None,
-    related_script_ids: str | None = None,
+    related_objects: str | None = None,
+    related_scripts: str | None = None,
     object_type: str | None = None,
     status: str | None = None,
+    source_kind: str | None = None,
+    source_name: str | None = None,
     top_k: int = 5,
 ) -> dict[str, Any]:
-    filters = _build_filters(project, script_type, related_records, related_script_ids, object_type, status)
-    return run_ask_netsuite_rag(_default_vault_root(vault_root), question, filters=filters, top_k=top_k)
+    filters = _build_filters(project, script_type, related_objects, related_scripts, object_type, status, source_kind, source_name)
+    return run_ask_netsuite_rag(
+        _default_vault_root(vault_root), question, filters=filters, top_k=top_k,
+        source_kind=source_kind, source_name=source_name,
+    )
 
 
 def get_index_status_tool(vault_root: str | None = None) -> dict[str, Any]:
     root = _default_vault_root(vault_root)
     config = load_config(root)
-    manifest = root / ".rag-index" / "index-manifest.json"
-    if not config.chroma_path.exists():
-        return {
-            "indexed": False,
-            "vault_root": str(root),
-            "manifest_exists": manifest.exists(),
-            "collection_count": 0,
-        }
-    store = ChromaVectorStore(
-        config.chroma_path,
-        config.collection_name,
-        SentenceTransformerEmbedder(config.embedding_model, cache_folder=config.embedding_cache_path),
-    )
-    count = store.count()
-    return {
-        "indexed": count > 0,
+    manifest_path = root / ".rag-index" / "index-manifest.json"
+
+    base: dict[str, Any] = {
         "vault_root": str(root),
-        "manifest_exists": manifest.exists(),
-        "collection_count": count,
+        "manifest_exists": manifest_path.exists(),
     }
+
+    # Try to get collection count without needing a full embedder
+    count = 0
+    if config.chroma_path.exists():
+        import chromadb
+        client = chromadb.PersistentClient(path=str(config.chroma_path))
+        try:
+            collection = client.get_collection(name=config.collection_name)
+            count = collection.count()
+        except chromadb.errors.NotFoundError:
+            count = 0
+    base["indexed"] = count > 0
+    base["collection_count"] = count
+
+    # Build per-source statistics from manifest
+    sources: dict[str, dict[str, Any]] = {}
+    manifest = read_manifest(manifest_path) if manifest_path.exists() else {}
+
+    for source in config.sources:
+        name = source.source_name
+        # Count files and find last indexed time for this source
+        source_entries = [
+            entry for entry in manifest.values()
+            if entry.source_name == name
+        ]
+        file_count = len(source_entries)
+        last_indexed = ""
+        if source_entries:
+            last_indexed = max(
+                (entry.indexed_at for entry in source_entries if entry.indexed_at),
+                default="",
+            )
+
+        source_info: dict[str, Any] = {
+            "source_kind": source.source_kind,
+            "file_count": file_count,
+            "last_indexed": last_indexed,
+        }
+
+        # Add git info for code sources
+        if source.source_kind == "code" and source_entries:
+            from netsuite_rag_mcp.git_utils import get_git_commit, is_git_dirty, get_git_branch
+            git_commit = ""
+            git_branch = ""
+            is_dirty = False
+            if source.root.exists():
+                git_commit = get_git_commit(source.root)
+                git_branch = get_git_branch(source.root)
+                is_dirty = is_git_dirty(source.root)
+            source_info["git"] = {
+                "commit": git_commit,
+                "branch": git_branch,
+                "dirty": is_dirty,
+            }
+
+        sources[name] = source_info
+
+    base["sources"] = sources
+    return base
 
 
 def _build_filters(
     project: str | None,
     script_type: str | None,
-    related_records: str | None,
-    related_script_ids: str | None,
+    related_objects: str | None,
+    related_scripts: str | None,
     object_type: str | None,
     status: str | None,
+    source_kind: str | None = None,
+    source_name: str | None = None,
 ) -> dict[str, Any]:
     filters: dict[str, Any] = {}
     for key, value in {
         "project": project,
         "script_type": script_type,
-        "related_records": related_records,
-        "related_script_ids": related_script_ids,
+        "related_objects": related_objects,
+        "related_scripts": related_scripts,
         "object_type": object_type,
         "status": status,
+        "source_kind": source_kind,
+        "source_name": source_name,
     }.items():
         if value:
             filters[key] = value
@@ -120,15 +199,37 @@ def index_vault(vault_root: str | None = None, mode: str = "incremental") -> dic
 
 
 @mcp.tool()
+def index_sources(
+    vault_root: str | None = None,
+    source_names: list[str] | None = None,
+    source_kind: str | None = None,
+    mode: str = "incremental",
+) -> dict[str, Any]:
+    """Index specific sources by name or kind.
+
+    Args:
+        vault_root: Root path of the Obsidian vault.
+        source_names: Optional list of source names to index (e.g., ["obsidian", "netsuite_repo"]).
+        source_kind: Optional source kind filter ("note" or "code").
+        mode: "full" to reset and re-index, "incremental" for delta.
+    """
+    return index_sources_tool(
+        vault_root=vault_root, source_names=source_names, source_kind=source_kind, mode=mode,
+    )
+
+
+@mcp.tool()
 def search_netsuite_knowledge(
     question: str,
     vault_root: str | None = None,
     project: str | None = None,
     script_type: str | None = None,
-    related_records: str | None = None,
-    related_script_ids: str | None = None,
+    related_objects: str | None = None,
+    related_scripts: str | None = None,
     object_type: str | None = None,
     status: str | None = None,
+    source_kind: str | None = None,
+    source_name: str | None = None,
     top_k: int = 5,
 ) -> dict[str, Any]:
     """Search NetSuite Obsidian knowledge and return retrieved chunks with citations.
@@ -138,10 +239,12 @@ def search_netsuite_knowledge(
         vault_root: Root path of the Obsidian vault.
         project: Filter by project name.
         script_type: Filter by script type (restlet, suitelet, userevent, mapreduce, clientscript).
-        related_records: Filter by related NetSuite records.
-        related_script_ids: Filter by related script IDs.
+        related_objects: Filter by related NetSuite records.
+        related_scripts: Filter by related script IDs.
         object_type: Filter by object type (savedsearch, customlist, customrecord, workflow, role, deployment).
         status: Filter by status (active, inactive).
+        source_kind: Filter by source kind (note, code).
+        source_name: Filter by source name (e.g., obsidian, netsuite_repo).
         top_k: Number of results to return.
     """
     return search_netsuite_knowledge_tool(
@@ -149,10 +252,12 @@ def search_netsuite_knowledge(
         vault_root,
         project,
         script_type,
-        related_records,
-        related_script_ids,
+        related_objects,
+        related_scripts,
         object_type,
         status,
+        source_kind,
+        source_name,
         top_k,
     )
 
@@ -163,10 +268,12 @@ def ask_netsuite_rag(
     vault_root: str | None = None,
     project: str | None = None,
     script_type: str | None = None,
-    related_records: str | None = None,
-    related_script_ids: str | None = None,
+    related_objects: str | None = None,
+    related_scripts: str | None = None,
     object_type: str | None = None,
     status: str | None = None,
+    source_kind: str | None = None,
+    source_name: str | None = None,
     top_k: int = 5,
 ) -> dict[str, Any]:
     """Return RAG context, sources, and answer policy for the Copilot model.
@@ -176,10 +283,12 @@ def ask_netsuite_rag(
         vault_root: Root path of the Obsidian vault.
         project: Filter by project name.
         script_type: Filter by script type.
-        related_records: Filter by related NetSuite records.
-        related_script_ids: Filter by related script IDs.
+        related_objects: Filter by related NetSuite records.
+        related_scripts: Filter by related script IDs.
         object_type: Filter by object type.
         status: Filter by status.
+        source_kind: Filter by source kind (note, code).
+        source_name: Filter by source name (e.g., obsidian, netsuite_repo).
         top_k: Number of chunks to retrieve.
     """
     return ask_netsuite_rag_tool(
@@ -187,10 +296,12 @@ def ask_netsuite_rag(
         vault_root,
         project,
         script_type,
-        related_records,
-        related_script_ids,
+        related_objects,
+        related_scripts,
         object_type,
         status,
+        source_kind,
+        source_name,
         top_k,
     )
 

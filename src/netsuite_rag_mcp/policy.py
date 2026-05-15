@@ -48,4 +48,23 @@ def build_answer_policy() -> str:
 
 ## 规则10：可测试性与持续优化
 - 如果发现引用缺失、冲突、拒答或脱敏触发，应在 answer_diagnostics 中说明触发项。
-"""
+
+## 规则11：路由指引
+- 模型应遵循 routing 字段中的路由建议，优先使用路由推荐的数据源类型。
+- 当 routing.kind 为 note_led 时，优先关注笔记来源；code_led 时优先关注代码来源；mixed 时同等关注。
+- 如果 routing.source_filter 指定了 source_kind，则优先参考该类型的回答。
+
+## 规则12：冲突处理
+- 当 conflicts_detected 不为空时，模型应按 winning_source 字段的指引选择权威来源。
+- implementation 类冲突以代码为权威；business 类冲突以笔记为权威；unclassified 类冲突应同时标注两个来源并标记不确定性。
+- 不要合并冲突来源的信息，而是明确标注哪个来源更可信及原因。
+
+## 规则13：时效性标注
+- 当 stale_sources 不为空时，模型应标注可能过时的笔记来源。
+- 对 stale_entries 中列出的来源，在引用时添加"⚠️ 该笔记可能已过时"的提示。
+- 如果同时有 stale 和 fresh 来源，优先使用较新的来源回答。
+
+## 规则14：脏代码警告
+- 当 code_dirty_sources 不为空时，模型应标注包含未提交变更的代码来源。
+- 对 code_dirty_sources 中列出的来源，在引用时添加"⚠️ 该代码包含未提交的本地变更"的提示。
+- 依赖这些未提交代码的回答应注明可能不代表仓库最新状态。"""
