@@ -3,7 +3,7 @@ type: object
 project: project-a
 object_type: savedsearch
 object_id: customsearch_example
-related_records: [salesorder]
+related_objects: [salesorder]
 status: active
 tags: [netsuite, object]
 ---

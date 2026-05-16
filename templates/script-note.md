@@ -6,8 +6,8 @@ script_type: restlet
 script_id: customscript_example
 script_name: Example Script
 deployment_id: customdeploy_example
-related_records: [salesorder]
-related_script_ids: []
+related_objects: [salesorder]
+related_scripts: []
 status: active
 tags: [netsuite, suitescript]
 ---

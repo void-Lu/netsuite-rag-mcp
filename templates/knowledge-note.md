@@ -2,7 +2,7 @@
 type: knowledge
 topic: suitescript-pattern
 author: developer-name
-related_records: [salesorder]
+related_objects: [salesorder]
 related_script_types: [restlet, mapreduce]
 tags: [netsuite, knowledge]
 ---

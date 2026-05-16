@@ -53,8 +53,8 @@ def test_vector_store_upsert_query_and_reset(tmp_path: Path):
             "project": "project-a",
             "script_type": "restlet",
             "script_id": "customscript_order_sync_restlet",
-            "related_records": ["salesorder"],
-            "related_script_ids": ["customscript_order_sync_mr"],
+            "related_objects": ["salesorder"],
+            "related_scripts": ["customscript_order_sync_mr"],
             "status": "active",
         },
     )
@@ -63,8 +63,8 @@ def test_vector_store_upsert_query_and_reset(tmp_path: Path):
     results = store.query("订单同步 Map/Reduce", n_results=3)
 
     assert len(results) == 1
-    assert results[0].metadata["related_records"] == ["salesorder"]
-    assert results[0].metadata["related_script_ids"] == ["customscript_order_sync_mr"]
+    assert results[0].metadata["related_objects"] == ["salesorder"]
+    assert results[0].metadata["related_scripts"] == ["customscript_order_sync_mr"]
 
     store.reset()
     assert store.count() == 0
@@ -106,8 +106,8 @@ type: script
 project: project-a
 script_type: restlet
 script_id: customscript_order_sync_restlet
-related_records: [salesorder]
-related_script_ids: []
+related_objects: [salesorder]
+related_scripts: []
 status: active
 ---
 

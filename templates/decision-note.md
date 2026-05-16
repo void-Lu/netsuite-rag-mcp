@@ -3,8 +3,8 @@ type: decision
 project: project-a
 author: developer-name
 decision_status: accepted
-related_records: [salesorder]
-related_script_ids: []
+related_objects: [salesorder]
+related_scripts: []
 decision_date: 2026-05-13
 tags: [netsuite, decision]
 ---

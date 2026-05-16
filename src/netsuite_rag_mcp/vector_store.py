@@ -146,12 +146,13 @@ class ChromaVectorStore:
             ids=ids, documents=texts, embeddings=embeddings, metadatas=chroma_metadatas
         )
 
-    def query(self, query_text: str, n_results: int = 5) -> list[SearchResult]:
+    def query(self, query_text: str, n_results: int = 5, where: dict[str, Any] | None = None) -> list[SearchResult]:
         """Query the vector store for similar chunks.
 
         Args:
             query_text: Text to search for
             n_results: Number of results to return
+            where: Optional ChromaDB metadata filter where clause
 
         Returns:
             List of SearchResult objects
@@ -159,12 +160,17 @@ class ChromaVectorStore:
         # Embed query
         query_embedding = self.embedder.embed([query_text])[0]
 
+        # Build query kwargs
+        query_kwargs: dict[str, Any] = {
+            "query_embeddings": [query_embedding],
+            "n_results": n_results,
+            "include": ["documents", "metadatas", "distances"],
+        }
+        if where is not None:
+            query_kwargs["where"] = where
+
         # Query Chroma collection
-        results = self._collection.query(
-            query_embeddings=[query_embedding],
-            n_results=n_results,
-            include=["documents", "metadatas", "distances"],
-        )
+        results = self._collection.query(**query_kwargs)
 
         # Convert results to SearchResult objects
         search_results = []
