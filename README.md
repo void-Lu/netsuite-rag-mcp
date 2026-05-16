@@ -166,30 +166,30 @@ sources:
 
 ## 📝 Obsidian 笔记模板
 
-项目提供 NetSuite 相关笔记模板（`templates/` 目录），复制到你的 Vault 中使用。
+项目提供 NetSuite 相关笔记模板，按类别存放在 `templates/` 子目录中，复制到你的 Vault 中使用。
 
-### 脚本模板（按脚本类型）
-
-| 模板 | 用途 | 关键 Frontmatter 字段 |
-| --- | --- | --- |
-| `script-note.md` | SuiteScript 通用脚本笔记 | `script_type`, `script_id`, `deployment_id`, `related_objects`, `related_scripts` |
-| `restlet-note.md` | RESTlet 脚本笔记 | `script_type: restlet`, 入口函数（get/post/put/delete） |
-| `suitelet-note.md` | Suitelet 脚本笔记 | `script_type: suitelet`, 入口函数（onRequest） |
-| `userevent-note.md` | UserEvent 脚本笔记 | `script_type: userevent`, 入口函数（beforeLoad/beforeSubmit/afterSubmit） |
-| `mapreduce-note.md` | Map/Reduce 脚本笔记 | `script_type: mapreduce`, 入口函数（getInputData/map/reduce/summarize） |
-| `clientscript-note.md` | Client Script 笔记 | `script_type: clientscript`, 入口函数（pageInit/fieldChanged/saveRecord 等） |
-
-### 对象模板（按对象类型）
+### 脚本模板（`templates/scripts/`）
 
 | 模板 | 用途 | 关键 Frontmatter 字段 |
 | --- | --- | --- |
-| `object-note.md` | NetSuite Object 通用笔记 | `object_type`, `object_id`, `related_objects`, `related_scripts` |
-| `savedsearch-note.md` | 保存的搜索 | `object_type: savedsearch`, 搜索条件、结果列 |
-| `customlist-note.md` | 自定义列表 | `object_type: customlist`, 列表项 |
-| `customrecord-note.md` | 自定义记录 | `object_type: customrecord`, 关键字段 |
-| `workflow-note.md` | 工作流 | `object_type: workflow`, 状态流转 |
-| `role-note.md` | 角色 | `object_type: role`, 核心权限 |
-| `deployment-note.md` | 脚本部署 | `object_type: deployment`, 部署配置 |
+| `scripts/default-script-note.md` | SuiteScript 通用脚本笔记 | `script_type`, `script_id`, `deployment_id`, `related_objects`, `related_scripts` |
+| `scripts/restlet-note.md` | RESTlet 脚本笔记 | `script_type: restlet`, 入口函数（get/post/put/delete） |
+| `scripts/suitelet-note.md` | Suitelet 脚本笔记 | `script_type: suitelet`, 入口函数（onRequest） |
+| `scripts/userevent-note.md` | UserEvent 脚本笔记 | `script_type: userevent`, 入口函数（beforeLoad/beforeSubmit/afterSubmit） |
+| `scripts/mapreduce-note.md` | Map/Reduce 脚本笔记 | `script_type: mapreduce`, 入口函数（getInputData/map/reduce/summarize） |
+| `scripts/clientscript-note.md` | Client Script 笔记 | `script_type: clientscript`, 入口函数（pageInit/fieldChanged/saveRecord 等） |
+
+### 对象模板（`templates/objects/`）
+
+| 模板 | 用途 | 关键 Frontmatter 字段 |
+| --- | --- | --- |
+| `objects/default-object-note.md` | NetSuite Object 通用笔记 | `object_type`, `object_id`, `related_objects`, `related_scripts` |
+| `objects/savedsearch-note.md` | 保存的搜索 | `object_type: savedsearch`, 搜索条件、结果列 |
+| `objects/customlist-note.md` | 自定义列表 | `object_type: customlist`, 列表项 |
+| `objects/customrecord-note.md` | 自定义记录 | `object_type: customrecord`, 关键字段 |
+| `objects/workflow-note.md` | 工作流 | `object_type: workflow`, 状态流转 |
+| `objects/role-note.md` | 角色 | `object_type: role`, 核心权限 |
+| `objects/deployment-note.md` | 脚本部署 | `object_type: deployment`, 部署配置 |
 
 ### 其他模板
 
@@ -242,19 +242,21 @@ pytest
 │   ├── retriever.py                       # 检索器 + 路由 + 冲突检测 + 问答上下文组装
 │   └── preload.py                         # BGE-M3 embedding 模型预下载入口
 ├── templates/                              # Obsidian 笔记模板
-│   ├── restlet-note.md                     # RESTlet 脚本模板
-│   ├── suitelet-note.md                    # Suitelet 脚本模板
-│   ├── userevent-note.md                   # UserEvent 脚本模板
-│   ├── mapreduce-note.md                   # Map/Reduce 脚本模板
-│   ├── clientscript-note.md                # Client Script 模板
-│   ├── script-note.md                      # 通用脚本模板
-│   ├── savedsearch-note.md                 # 保存的搜索模板
-│   ├── customlist-note.md                  # 自定义列表模板
-│   ├── customrecord-note.md                # 自定义记录模板
-│   ├── workflow-note.md                    # 工作流模板
-│   ├── role-note.md                        # 角色模板
-│   ├── deployment-note.md                  # 脚本部署模板
-│   ├── object-note.md                      # 通用对象模板
+│   ├── scripts/                            # 脚本模板（按脚本类型）
+│   │   ├── default-script-note.md          # 通用脚本模板
+│   │   ├── restlet-note.md                 # RESTlet 脚本模板
+│   │   ├── suitelet-note.md                # Suitelet 脚本模板
+│   │   ├── userevent-note.md               # UserEvent 脚本模板
+│   │   ├── mapreduce-note.md               # Map/Reduce 脚本模板
+│   │   └── clientscript-note.md            # Client Script 模板
+│   ├── objects/                            # 对象模板（按对象类型）
+│   │   ├── default-object-note.md          # 通用对象模板
+│   │   ├── savedsearch-note.md             # 保存的搜索模板
+│   │   ├── customlist-note.md              # 自定义列表模板
+│   │   ├── customrecord-note.md            # 自定义记录模板
+│   │   ├── workflow-note.md                # 工作流模板
+│   │   ├── role-note.md                    # 角色模板
+│   │   └── deployment-note.md              # 脚本部署模板
 │   ├── requirement-note.md                 # 需求文档模板
 │   ├── troubleshooting-note.md             # 排坑记录模板
 │   ├── decision-note.md                    # 技术决策模板
