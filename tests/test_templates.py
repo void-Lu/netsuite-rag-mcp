@@ -6,7 +6,7 @@ def read_template(name: str) -> str:
 
 
 def test_script_template_contains_required_fields():
-    text = read_template("script-note.md")
+    text = read_template("scripts/default-script-note.md")
 
     for field in [
         "type: script",
@@ -27,7 +27,7 @@ def test_script_template_contains_required_fields():
 
 
 def test_object_template_contains_required_fields():
-    text = read_template("object-note.md")
+    text = read_template("objects/default-object-note.md")
 
     for field in [
         "type: object",
