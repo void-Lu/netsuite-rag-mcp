@@ -54,9 +54,26 @@ def _resolved_path(value: str | Path) -> Path:
     return Path(value).expanduser().resolve()
 
 
+def _resolve_required_absolute_path(value: str | Path, *, description: str) -> Path:
+    path = Path(value).expanduser()
+    if not path.is_absolute():
+        raise RuntimeConfigError(f"{description} must be an absolute path; got {value}.", code="invalid_path")
+    return path.resolve()
+
+
+def _normalize_storage_hash_path(path_text: str, *, case_sensitive: bool | None = None) -> str:
+    if case_sensitive is None:
+        case_sensitive = os.name != "nt"
+
+    if case_sensitive:
+        return path_text
+
+    return path_text.replace("/", "\\").casefold()
+
+
 def vault_storage_id(vault_root: str | Path) -> str:
     root = _resolved_path(vault_root)
-    normalized = str(root).casefold()
+    normalized = _normalize_storage_hash_path(str(root))
     digest = hashlib.sha256(normalized.encode("utf-8")).hexdigest()[:10]
     return f"{_slug(root.name)}-{digest}"
 
@@ -92,7 +109,7 @@ def write_global_config(
     return path
 
 
-def _vault_from_global_config(raw: dict[str, Any]) -> tuple[str, Path] | None:
+def _vault_from_global_config(raw: dict[str, Any], config_path: Path) -> tuple[str, Path] | None:
     vaults = raw.get("vaults")
     if not isinstance(vaults, dict):
         return None
@@ -109,7 +126,8 @@ def _vault_from_global_config(raw: dict[str, Any]) -> tuple[str, Path] | None:
     if not isinstance(root, str) or not root:
         return None
 
-    return selected_name, _resolved_path(root)
+    description = f"global config {config_path} value vaults.{selected_name}.root"
+    return selected_name, _resolve_required_absolute_path(root, description=description)
 
 
 def _missing_config_error(config_path: Path) -> RuntimeConfigError:
@@ -145,11 +163,11 @@ def resolve_runtime_config(
     else:
         env_root = os.environ.get(VAULT_ROOT_ENV)
         if env_root:
-            vault_root = _resolved_path(env_root)
+            vault_root = _resolve_required_absolute_path(env_root, description=VAULT_ROOT_ENV)
             vault_name = vault_root.name
             resolution_source = "env"
         else:
-            selected = _vault_from_global_config(load_global_config(cfg_path))
+            selected = _vault_from_global_config(load_global_config(cfg_path), cfg_path)
             if selected is None:
                 raise _missing_config_error(cfg_path)
             vault_name, vault_root = selected

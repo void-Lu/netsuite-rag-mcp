@@ -9,10 +9,21 @@ CONFIG_DIR_ENV = "NETSUITE_RAG_CONFIG_DIR"
 USER_DATA_DIR_ENV = "NETSUITE_RAG_USER_DATA_DIR"
 
 
+def _env_override_path(env_var: str) -> Path | None:
+    override = os.environ.get(env_var)
+    if not override:
+        return None
+
+    path = Path(override).expanduser()
+    if not path.is_absolute():
+        raise ValueError(f"{env_var} must be an absolute path; got {override}.")
+    return path.resolve()
+
+
 def user_config_dir(app_name: str = APP_NAME) -> Path:
-    override = os.environ.get(CONFIG_DIR_ENV)
-    if override:
-        return Path(override).expanduser().resolve()
+    override = _env_override_path(CONFIG_DIR_ENV)
+    if override is not None:
+        return override
 
     if os.name == "nt":
         base = os.environ.get("APPDATA")
@@ -28,9 +39,9 @@ def user_config_dir(app_name: str = APP_NAME) -> Path:
 
 
 def user_data_dir(app_name: str = APP_NAME) -> Path:
-    override = os.environ.get(USER_DATA_DIR_ENV)
-    if override:
-        return Path(override).expanduser().resolve()
+    override = _env_override_path(USER_DATA_DIR_ENV)
+    if override is not None:
+        return override
 
     if os.name == "nt":
         base = os.environ.get("LOCALAPPDATA")

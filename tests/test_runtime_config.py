@@ -7,6 +7,7 @@ import yaml
 
 from netsuite_rag_mcp.runtime_config import (
     RuntimeConfigError,
+    _normalize_storage_hash_path,
     resolve_runtime_config,
     vault_storage_id,
     write_global_config,
@@ -73,6 +74,21 @@ def test_env_wins_over_global_config(monkeypatch: pytest.MonkeyPatch, tmp_path: 
     assert runtime.resolution_source == "env"
 
 
+def test_relative_env_vault_root_is_rejected(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
+    config_vault = _make_vault(tmp_path / "Config Vault")
+    config_path = tmp_path / "config" / "config.yaml"
+
+    write_global_config(config_path, vault_name="saved", vault_root=config_vault, make_default=True)
+    monkeypatch.setenv("NETSUITE_RAG_VAULT_ROOT", "relative-vault")
+
+    with pytest.raises(RuntimeConfigError) as exc_info:
+        resolve_runtime_config(config_path=config_path, data_root=tmp_path / "data")
+
+    message = str(exc_info.value)
+    assert "NETSUITE_RAG_VAULT_ROOT" in message
+    assert "absolute path" in message
+
+
 def test_global_config_resolves_default_vault(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
     vault = _make_vault(tmp_path / "Homework Vault")
     config_path = tmp_path / "config" / "config.yaml"
@@ -86,6 +102,58 @@ def test_global_config_resolves_default_vault(monkeypatch: pytest.MonkeyPatch, t
     assert runtime.vault_name == "homework"
     assert runtime.resolution_source == "global_config"
     assert runtime.sources_config_path == vault / "rag" / "sources.yaml"
+
+
+def test_relative_global_config_vault_root_is_rejected(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
+    config_path = tmp_path / "config" / "config.yaml"
+    config_path.parent.mkdir(parents=True)
+    config_path.write_text(
+        yaml.safe_dump(
+            {
+                "default_vault": "saved",
+                "vaults": {
+                    "saved": {
+                        "root": "relative-vault",
+                    }
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.delenv("NETSUITE_RAG_VAULT_ROOT", raising=False)
+
+    with pytest.raises(RuntimeConfigError) as exc_info:
+        resolve_runtime_config(config_path=config_path, data_root=tmp_path / "data")
+
+    message = str(exc_info.value)
+    assert "global config" in message
+    assert "vaults.saved.root" in message
+    assert "absolute path" in message
+
+
+def test_relative_config_dir_env_override_is_rejected(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
+    monkeypatch.setenv("NETSUITE_RAG_CONFIG_DIR", "relative-config")
+    monkeypatch.delenv("NETSUITE_RAG_VAULT_ROOT", raising=False)
+
+    with pytest.raises(ValueError) as exc_info:
+        resolve_runtime_config(data_root=tmp_path / "data")
+
+    message = str(exc_info.value)
+    assert "NETSUITE_RAG_CONFIG_DIR" in message
+    assert "absolute path" in message
+
+
+def test_relative_user_data_dir_env_override_is_rejected(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
+    vault = _make_vault(tmp_path / "Env Data Vault")
+    config_path = tmp_path / "config" / "config.yaml"
+    monkeypatch.setenv("NETSUITE_RAG_USER_DATA_DIR", "relative-data")
+
+    with pytest.raises(ValueError) as exc_info:
+        resolve_runtime_config(vault_root_arg=vault, config_path=config_path)
+
+    message = str(exc_info.value)
+    assert "NETSUITE_RAG_USER_DATA_DIR" in message
+    assert "absolute path" in message
 
 
 def test_missing_config_does_not_use_current_working_directory(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
@@ -127,6 +195,20 @@ def test_two_vaults_with_same_folder_name_get_different_storage_ids(tmp_path: Pa
     assert first_id != second_id
     assert first_id.startswith("homework-")
     assert second_id.startswith("homework-")
+
+
+def test_storage_hash_normalization_preserves_posix_case_differences():
+    first = _normalize_storage_hash_path("/vaults/client/homework", case_sensitive=True)
+    second = _normalize_storage_hash_path("/vaults/client/Homework", case_sensitive=True)
+
+    assert first != second
+
+
+def test_storage_hash_normalization_folds_windows_case_differences():
+    first = _normalize_storage_hash_path(r"C:\Vaults\client\homework", case_sensitive=False)
+    second = _normalize_storage_hash_path(r"c:\vaults\client\Homework", case_sensitive=False)
+
+    assert first == second
 
 
 def test_write_global_config_creates_expected_schema(tmp_path: Path):
