@@ -485,6 +485,7 @@ def index_sources(
         collection_name=config.collection_name,
         embedding_model=config.embedding_model,
         embedding_cache_path=config.embedding_cache_path,
+        manifest_path=config.manifest_path,
         sources=filtered_sources,
     )
 

@@ -152,6 +152,7 @@ def resolve_runtime_config(
     vault_root_arg: str | Path | None = None,
     config_path: str | Path | None = None,
     data_root: str | Path | None = None,
+    require_sources_config: bool = True,
 ) -> RuntimeConfig:
     cfg_path = _resolved_path(config_path) if config_path is not None else global_config_path()
     root_data = _resolved_path(data_root) if data_root is not None else user_data_dir()
@@ -174,7 +175,7 @@ def resolve_runtime_config(
             resolution_source = "global_config"
 
     sources_config_path = vault_root / "rag" / "sources.yaml"
-    if not sources_config_path.exists():
+    if require_sources_config and not sources_config_path.exists():
         raise _missing_sources_error(vault_root, sources_config_path)
 
     storage_id = vault_storage_id(vault_root)
