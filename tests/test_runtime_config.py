@@ -73,11 +73,12 @@ def test_env_wins_over_global_config(monkeypatch: pytest.MonkeyPatch, tmp_path: 
     assert runtime.resolution_source == "env"
 
 
-def test_global_config_resolves_default_vault(tmp_path: Path):
+def test_global_config_resolves_default_vault(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
     vault = _make_vault(tmp_path / "Homework Vault")
     config_path = tmp_path / "config" / "config.yaml"
 
     write_global_config(config_path, vault_name="homework", vault_root=vault, make_default=True)
+    monkeypatch.delenv("NETSUITE_RAG_VAULT_ROOT", raising=False)
 
     runtime = resolve_runtime_config(config_path=config_path, data_root=tmp_path / "data")
 
