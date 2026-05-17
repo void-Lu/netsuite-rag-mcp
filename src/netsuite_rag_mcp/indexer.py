@@ -360,7 +360,7 @@ def index_all(
     )
 
     # Initialize manifest
-    manifest_path = vault_root / MANIFEST_PATH
+    manifest_path = config.manifest_path
     manifest: dict[str, ManifestEntry] = {}
 
     # Handle full vs incremental mode
@@ -449,7 +449,7 @@ def index_sources(
         vector_store = ChromaVectorStore(
             config.chroma_path, config.collection_name, selected_embedder
         )
-        manifest_path = vault_root / MANIFEST_PATH
+        manifest_path = config.manifest_path
         manifest = read_manifest(manifest_path)
 
         sources_stats: dict[str, dict[str, Any]] = {}

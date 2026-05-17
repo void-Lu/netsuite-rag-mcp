@@ -95,7 +95,7 @@ def ask_netsuite_rag_tool(
 def get_index_status_tool(vault_root: str | None = None) -> dict[str, Any]:
     root = _default_vault_root(vault_root)
     config = load_config(root)
-    manifest_path = root / ".rag-index" / "index-manifest.json"
+    manifest_path = config.manifest_path
 
     base: dict[str, Any] = {
         "vault_root": str(root),
