@@ -10,6 +10,7 @@ from netsuite_rag_mcp.config import load_config
 from netsuite_rag_mcp.indexer import index_sources as run_index_sources
 from netsuite_rag_mcp.indexer import index_vault as run_index_vault
 from netsuite_rag_mcp.manifest import read_manifest
+from netsuite_rag_mcp.note_writer import save_obsidian_note as run_save_obsidian_note
 from netsuite_rag_mcp.retriever import ask_netsuite_rag as run_ask_netsuite_rag
 from netsuite_rag_mcp.retriever import search_netsuite_knowledge as run_search_netsuite_knowledge
 from netsuite_rag_mcp.vector_store import ChromaVectorStore, Embedder, SentenceTransformerEmbedder
@@ -159,6 +160,48 @@ def get_index_status_tool(vault_root: str | None = None) -> dict[str, Any]:
 
     base["sources"] = sources
     return base
+
+
+def save_obsidian_note_tool(
+    note_type: str,
+    title: str,
+    content: str,
+    project: str | None = None,
+    domain: str | None = None,
+    related_script_types: list[str] | None = None,
+    script_type: str | None = None,
+    object_type: str | None = None,
+    related_objects: list[str] | None = None,
+    related_scripts: list[str] | None = None,
+    tags: list[str] | None = None,
+    zentao_urls: list[str] | None = None,
+    decision_status: str | None = None,
+    status: str | None = None,
+    filename: str | None = None,
+    overwrite: bool = False,
+    auto_index: bool = True,
+    vault_root: str | None = None,
+) -> dict[str, Any]:
+    return run_save_obsidian_note(
+        note_type=note_type,
+        title=title,
+        content=content,
+        project=project,
+        domain=domain,
+        related_script_types=related_script_types,
+        script_type=script_type,
+        object_type=object_type,
+        related_objects=related_objects,
+        related_scripts=related_scripts,
+        tags=tags,
+        zentao_urls=zentao_urls,
+        decision_status=decision_status,
+        status=status,
+        filename=filename,
+        overwrite=overwrite,
+        auto_index=auto_index,
+        vault_root=vault_root,
+    )
 
 
 def _build_filters(
@@ -314,6 +357,50 @@ def get_index_status(vault_root: str | None = None) -> dict[str, Any]:
         vault_root: Root path of the Obsidian vault.
     """
     return get_index_status_tool(vault_root)
+
+
+@mcp.tool()
+def save_obsidian_note(
+    note_type: str,
+    title: str,
+    content: str,
+    project: str | None = None,
+    domain: str | None = None,
+    related_script_types: list[str] | None = None,
+    script_type: str | None = None,
+    object_type: str | None = None,
+    related_objects: list[str] | None = None,
+    related_scripts: list[str] | None = None,
+    tags: list[str] | None = None,
+    zentao_urls: list[str] | None = None,
+    decision_status: str | None = None,
+    status: str | None = None,
+    filename: str | None = None,
+    overwrite: bool = False,
+    auto_index: bool = True,
+    vault_root: str | None = None,
+) -> dict[str, Any]:
+    """Save an Obsidian note into the configured vault and optionally re-index."""
+    return save_obsidian_note_tool(
+        note_type=note_type,
+        title=title,
+        content=content,
+        project=project,
+        domain=domain,
+        related_script_types=related_script_types,
+        script_type=script_type,
+        object_type=object_type,
+        related_objects=related_objects,
+        related_scripts=related_scripts,
+        tags=tags,
+        zentao_urls=zentao_urls,
+        decision_status=decision_status,
+        status=status,
+        filename=filename,
+        overwrite=overwrite,
+        auto_index=auto_index,
+        vault_root=vault_root,
+    )
 
 
 def main() -> None:

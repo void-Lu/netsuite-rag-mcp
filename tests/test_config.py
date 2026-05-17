@@ -47,9 +47,11 @@ def test_load_config_uses_defaults_when_file_missing(tmp_path: Path):
     assert config.include_paths == [tmp_path / "projects", tmp_path / "knowledge"]
     assert config.exclude_names == {".git", ".obsidian", ".superpowers", ".rag-index"}
     assert config.chroma_path == tmp_path / ".rag-index" / "chroma"
-    assert config.collection_name == "netsuite_notes"
+    assert config.collection_name == "netsuite_knowledge"
     assert config.embedding_model == "BAAI/bge-m3"
     assert config.embedding_cache_path == tmp_path / ".models"
+    assert len(config.sources) == 1
+    assert config.sources[0].collection == "netsuite_knowledge"
 
 
 def test_load_config_resolves_custom_embedding_cache_path(tmp_path: Path):

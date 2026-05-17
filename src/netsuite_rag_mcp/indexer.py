@@ -416,11 +416,18 @@ def index_sources(
 
     Returns per-source statistics same as index_all.
     """
+    if mode not in ("full", "incremental"):
+        raise ValueError(f"Invalid mode: {mode}. Must be 'full' or 'incremental'")
+
     vault_root = Path(vault_root).expanduser().resolve()
 
     # Load configuration
     if config is None:
         config = load_config(vault_root)
+
+    has_filters = source_names is not None or source_kind is not None
+    if not has_filters:
+        return index_all(vault_root, mode=mode, config=config, embedder=embedder)
 
     # Filter sources
     filtered_sources: list[SourceConfig] = []
@@ -430,6 +437,44 @@ def index_sources(
         if source_kind is not None and source.source_kind != source_kind:
             continue
         filtered_sources.append(source)
+
+    if mode == "full":
+        if embedder is None:
+            selected_embedder = SentenceTransformerEmbedder(
+                config.embedding_model, cache_folder=config.embedding_cache_path
+            )
+        else:
+            selected_embedder = embedder
+
+        vector_store = ChromaVectorStore(
+            config.chroma_path, config.collection_name, selected_embedder
+        )
+        manifest_path = vault_root / MANIFEST_PATH
+        manifest = read_manifest(manifest_path)
+
+        sources_stats: dict[str, dict[str, Any]] = {}
+        total_indexed = 0
+        total_skipped = 0
+        total_deleted = 0
+        total_errors = 0
+
+        for source in filtered_sources:
+            stats = _index_source(source, vault_root, manifest, vector_store, mode)
+            sources_stats[source.source_name] = stats
+            total_indexed += stats["indexed"]
+            total_skipped += stats["skipped"]
+            total_deleted += stats["deleted"]
+            total_errors += len(stats["errors"])
+
+        write_manifest(manifest_path, manifest)
+
+        return {
+            "sources": sources_stats,
+            "total_indexed": total_indexed,
+            "total_skipped": total_skipped,
+            "total_deleted": total_deleted,
+            "total_errors": total_errors,
+        }
 
     # Delegate to index_all with a modified config containing only filtered sources
     filtered_config = RagConfig(

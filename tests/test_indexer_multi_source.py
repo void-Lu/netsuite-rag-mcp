@@ -16,7 +16,7 @@ from netsuite_rag_mcp.indexer import (
     index_vault,
 )
 from netsuite_rag_mcp.models import RagConfig, SourceConfig
-from netsuite_rag_mcp.vector_store import FakeEmbedder
+from netsuite_rag_mcp.vector_store import ChromaVectorStore, FakeEmbedder
 
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
@@ -98,6 +98,14 @@ def _write_code(vault: Path, relative_path: str, content: str) -> Path:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(content, encoding="utf-8")
     return path
+
+
+def _collection_count(vault: Path) -> int:
+    config = load_config(vault)
+    vector_store = ChromaVectorStore(
+        config.chroma_path, config.collection_name, FakeEmbedder()
+    )
+    return vector_store.count()
 
 
 NOTE_CONTENT = """---
@@ -410,6 +418,118 @@ class TestIndexSources:
         result = index_sources(vault, mode="full", embedder=FakeEmbedder())
 
         assert "obsidian" in result["sources"]
+
+    def test_index_sources_full_by_name_preserves_unselected_code_source(self, tmp_path: Path):
+        vault = tmp_path / "vault"
+        vault.mkdir()
+        _write_v2_config(vault)
+        _write_note(vault, "projects/test-note.md", NOTE_CONTENT)
+        _write_code(vault, "projects/test-script.js", JS_CONTENT)
+
+        index_all(vault, mode="full", embedder=FakeEmbedder())
+
+        from netsuite_rag_mcp.manifest import read_manifest
+
+        manifest_path = vault / ".rag-index" / "index-manifest.json"
+        initial_manifest = read_manifest(manifest_path)
+        initial_count = _collection_count(vault)
+        code_keys = {
+            key for key, entry in initial_manifest.items() if entry.source_kind == "code"
+        }
+
+        result = index_sources(
+            vault, source_names=["obsidian"], mode="full", embedder=FakeEmbedder()
+        )
+
+        manifest = read_manifest(manifest_path)
+        assert set(result["sources"]) == {"obsidian"}
+        assert code_keys
+        assert code_keys.issubset(manifest.keys())
+        assert _collection_count(vault) == initial_count
+
+    def test_index_sources_full_by_kind_preserves_unselected_note_source(self, tmp_path: Path):
+        vault = tmp_path / "vault"
+        vault.mkdir()
+        _write_v2_config(vault)
+        _write_note(vault, "projects/test-note.md", NOTE_CONTENT)
+        _write_code(vault, "projects/test-script.js", JS_CONTENT)
+
+        index_all(vault, mode="full", embedder=FakeEmbedder())
+
+        from netsuite_rag_mcp.manifest import read_manifest
+
+        manifest_path = vault / ".rag-index" / "index-manifest.json"
+        initial_manifest = read_manifest(manifest_path)
+        initial_count = _collection_count(vault)
+        note_keys = {
+            key for key, entry in initial_manifest.items() if entry.source_kind == "note"
+        }
+
+        result = index_sources(
+            vault, source_kind="code", mode="full", embedder=FakeEmbedder()
+        )
+
+        manifest = read_manifest(manifest_path)
+        assert set(result["sources"]) == {"netsuite_repo"}
+        assert note_keys
+        assert note_keys.issubset(manifest.keys())
+        assert _collection_count(vault) == initial_count
+
+    def test_index_sources_full_no_match_preserves_existing_index(self, tmp_path: Path):
+        vault = tmp_path / "vault"
+        vault.mkdir()
+        _write_v2_config(vault)
+        _write_note(vault, "projects/test-note.md", NOTE_CONTENT)
+        _write_code(vault, "projects/test-script.js", JS_CONTENT)
+
+        index_all(vault, mode="full", embedder=FakeEmbedder())
+
+        from netsuite_rag_mcp.manifest import read_manifest
+
+        manifest_path = vault / ".rag-index" / "index-manifest.json"
+        initial_manifest = read_manifest(manifest_path)
+        initial_count = _collection_count(vault)
+
+        result = index_sources(
+            vault, source_names=["missing"], mode="full", embedder=FakeEmbedder()
+        )
+
+        manifest = read_manifest(manifest_path)
+        assert result["sources"] == {}
+        assert manifest == initial_manifest
+        assert _collection_count(vault) == initial_count
+
+    def test_index_sources_full_deletes_removed_selected_files_only(self, tmp_path: Path):
+        vault = tmp_path / "vault"
+        vault.mkdir()
+        _write_v2_config(vault)
+        deleted_note = _write_note(vault, "projects/deleted-note.md", NOTE_CONTENT)
+        _write_note(vault, "knowledge/kept-note.md", NOTE_CONTENT)
+        _write_code(vault, "projects/test-script.js", JS_CONTENT)
+
+        index_all(vault, mode="full", embedder=FakeEmbedder())
+
+        from netsuite_rag_mcp.manifest import read_manifest
+
+        manifest_path = vault / ".rag-index" / "index-manifest.json"
+        initial_manifest = read_manifest(manifest_path)
+        deleted_key = "obsidian:note:projects/deleted-note.md"
+        kept_note_key = "obsidian:note:knowledge/kept-note.md"
+        code_key = "netsuite_repo:code:projects/test-script.js"
+        initial_count = _collection_count(vault)
+        deleted_chunk_count = initial_manifest[deleted_key].chunk_count
+
+        deleted_note.unlink()
+        result = index_sources(
+            vault, source_names=["obsidian"], mode="full", embedder=FakeEmbedder()
+        )
+
+        manifest = read_manifest(manifest_path)
+        assert result["sources"]["obsidian"]["deleted"] == 1
+        assert deleted_key not in manifest
+        assert kept_note_key in manifest
+        assert code_key in manifest
+        assert _collection_count(vault) == initial_count - deleted_chunk_count
 
 
 # ── Tests: Backward compatibility: index_vault ────────────────────────────────

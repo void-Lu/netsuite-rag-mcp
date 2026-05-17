@@ -1,0 +1,574 @@
+plan_id: 20260517-save-obsidian-note
+objective: Implement the save_obsidian_note MCP tool and align the Obsidian Vault field/path structure with the approved specs.
+created_at: "2026-05-17"
+created_by: gem-planner
+status: pending
+mode: revise
+research_confidence: high
+plan_metrics:
+  wave_1_task_count: 2
+  total_dependencies: 12
+  risk_score: high
+complexity: complex
+tldr: |
+  Revised execution DAG addresses all reviewer/critic blockers: expanded RAG TDD coverage, YAML-safe frontmatter tests, safe project-directory creation, Vault no-clobber moves, verified backup/quarantine before deletion, scoped boolean validations, explicit Vault reindex before final search, and per-task size estimates.
+open_questions: []
+gaps: []
+pre_mortem:
+  overall_risk_level: high
+  critical_failure_modes:
+    - scenario: Vault move or project-a deletion loses data or overwrites a destination unexpectedly.
+      likelihood: medium
+      impact: critical
+      mitigation: Create a unique timestamped backup outside the Vault with manifest, hash/size verification, no-clobber destination preflight for every move, and quarantine project-a before deletion cleanup.
+    - scenario: Validation grep fails because design specs or the revised plan intentionally mention historical strings.
+      likelihood: high
+      impact: medium
+      mitigation: Use scoped boolean assertions over operational Vault/RAG paths and explicitly exclude docs/superpowers/specs/** plus plan artifacts from historical-string checks.
+    - scenario: YAML injection in title/tags/related fields creates malformed or multi-document frontmatter.
+      likelihood: medium
+      impact: high
+      mitigation: Drive implementation with tests that parse the emitted frontmatter via yaml.safe_load and cover newline, --- marker, colon, list syntax, and anchor-like values.
+    - scenario: save_obsidian_note creates directories too broadly or permits path traversal.
+      likelihood: medium
+      impact: high
+      mitigation: Allow creation only for resolved project note directories under the Vault, validate every path component, reject empty slugs, and enforce overwrite protection.
+  assumptions:
+    - User already approved continuing and deletion of projects/project-a; no additional confirmation pause is needed.
+    - Deletion must remain reversible through verified backup/quarantine.
+    - Project note writes may create missing project/type directories, consistent with the tool purpose; domain/script_type/object_type traversal and unknown-subdir protections remain enforced.
+implementation_specification:
+  code_structure: |
+    RAG side adds src/netsuite_rag_mcp/note_writer.py for pure, testable note-writing logic and a thin server.py wrapper. Vault side performs scoped frontmatter/template/path cleanup using preflighted file moves, then reindexes the obsidian source before final search validation.
+  affected_areas:
+    - f:/vscode projects folder/netsuite-rag-mcp/src/netsuite_rag_mcp/note_writer.py
+    - f:/vscode projects folder/netsuite-rag-mcp/src/netsuite_rag_mcp/server.py
+    - f:/vscode projects folder/netsuite-rag-mcp/tests/test_save_obsidian_note.py
+    - f:/vscode projects folder/netsuite-rag-mcp/tests/test_server_tools.py
+    - f:/vscode projects folder/netsuite-rag-mcp/README.md
+    - d:/Obsidian Vault/homework/templates/**
+    - d:/Obsidian Vault/homework/knowledge/**
+    - d:/Obsidian Vault/homework/projects/**
+    - d:/Obsidian Vault/homework/README.md
+    - d:/Obsidian Vault/homework/Index.md
+  component_details:
+    - component: note_writer
+      responsibility: Validate inputs, resolve safe Vault-relative paths, generate YAML frontmatter via yaml.safe_dump, redact content, write files, and optionally call index_sources for obsidian incremental indexing.
+      interfaces:
+        - save_obsidian_note(...)->dict[str, Any]
+        - slug(title_or_filename)->str or empty_slug error
+      dependencies:
+        - component: redaction
+          relationship: Redacts content only, preserving YAML frontmatter structure.
+        - component: indexer.index_sources
+          relationship: Invoked with source_names=["obsidian"] and mode="incremental" when auto_index is true.
+      integration_points:
+        - server.py registers MCP tool and delegates to note_writer.
+        - README documents the tool contract and examples.
+    - component: vault_cleanup
+      responsibility: Rename frontmatter fields, move knowledge domains, migrate knowledge template, quarantine/delete project-a, and leave projects/.gitkeep.
+      interfaces:
+        - verified_backup_manifest.json outside the Vault
+        - no_clobber_move(src,dst) stops when dst exists
+      dependencies:
+        - component: backup_preflight
+          relationship: Cleanup/deletion depends on verified backup manifest.
+      integration_points:
+        - Explicit reindex via index_sources(source_names=["obsidian"], mode="full" or "incremental") after structural cleanup.
+contracts:
+  - from_task: T01-rag-tdd-save-note
+    to_task: T03-rag-implement-save-note
+    interface: Expanded failing tests define all result codes, path mappings, YAML serialization, indexing behavior, and project directory creation expectations.
+    format: pytest tests in tests/test_save_obsidian_note.py with direct boolean assertions.
+  - from_task: T02-vault-backup-preflight
+    to_task: T04-vault-structure-cleanup
+    interface: Verified backup manifest and destination preflight list must exist before any move.
+    format: JSON manifest with generated_at, backup_root, entries[{source, backup, size, sha256}], file_count, verified.
+  - from_task: T02-vault-backup-preflight
+    to_task: T05-vault-project-a-quarantine-delete
+    interface: Deletion may proceed only after backup verification covers projects/project-a and quarantine path is created.
+    format: manifest entry coverage plus quarantine path outside normal Vault tree.
+  - from_task: T04-vault-structure-cleanup
+    to_task: T06-vault-reindex
+    interface: Final Vault note/template paths and field names are stable before reindex.
+    format: filesystem state under knowledge/, templates/, README.md, Index.md.
+  - from_task: T05-vault-project-a-quarantine-delete
+    to_task: T06-vault-reindex
+    interface: projects/ contains only .gitkeep before reindex.
+    format: filesystem assertion.
+  - from_task: T06-vault-reindex
+    to_task: T08-final-validation
+    interface: Fresh obsidian index is available for final search validation.
+    format: index_sources result with sources.obsidian present and total_errors == 0.
+  - from_task: T03-rag-implement-save-note
+    to_task: T07-documentation
+    interface: Final MCP tool signature, return schema, and examples are available for README updates.
+    format: Python function signature plus observed tests.
+tasks:
+  - id: T01-rag-tdd-save-note
+    title: Expand save_obsidian_note TDD coverage
+    description: Add failing tests before implementation for every reviewer-blocking behavior in the RAG workspace.
+    wave: 1
+    agent: gem-implementer
+    prototype: false
+    covers:
+      - invalid_note_type
+      - all note_type path mappings: decision, troubleshooting, requirement, script, object, knowledge
+      - unknown_subdir for invalid/missing domain/script_type/object_type directory cases
+      - explicit filename appends .md
+      - auto_index false returns indexed: null
+      - index failure returns ok true and indexed.error without blocking write
+      - fixed frontmatter fields type/project/author/updated_at/tags
+      - slug boundaries including 80-char max, punctuation normalization, Chinese retention, and empty_slug
+      - path traversal via project/domain/script_type/object_type/filename
+      - YAML injection safety for title/tags/related fields
+      - safe project directory creation for project note writes
+      - direct boolean assertions instead of ambiguous Select-String output
+    priority: high
+    status: pending
+    flags: {flaky: false, retries_used: 0}
+    dependencies: []
+    conflicts_with: [T03-rag-implement-save-note]
+    context_files:
+      - path: f:/vscode projects folder/netsuite-rag-mcp/docs/superpowers/specs/2026-05-17-save-obsidian-note-tool-design.md
+        description: Source RAG tool specification.
+      - path: f:/vscode projects folder/netsuite-rag-mcp/tests/test_server_tools.py
+        description: Existing server-side test style and FakeEmbedder usage.
+      - path: f:/vscode projects folder/netsuite-rag-mcp/src/netsuite_rag_mcp/server.py
+        description: Existing MCP tool wrapper pattern.
+    planning_pass: 2
+    planning_history:
+      - pass: 1
+        reason: Initial plan missed reviewer-blocking edge cases.
+        timestamp: "2026-05-17T00:00:00+08:00"
+      - pass: 2
+        reason: Reviewer/critic requested exhaustive TDD and explicit assertions.
+        timestamp: "2026-05-17T00:00:00+08:00"
+    estimated_effort: medium
+    estimated_files: 1
+    estimated_lines: 260
+    focus_area: tests
+    verification:
+      - "Run: pytest tests/test_save_obsidian_note.py -q"
+      - "Expected while TDD-first: tests fail only because note_writer/server implementation is absent or incomplete."
+    acceptance_criteria:
+      - Tests include one parametrized path-mapping case for each note_type.
+      - Tests include malicious ../ values for project, domain, script_type, object_type, and filename.
+      - Tests parse generated frontmatter with yaml.safe_load for newline, --- markers, colon, YAML list syntax, and anchor-like strings in title/tags/related fields.
+      - Tests assert booleans with assert statements, not manual grep/Select-String inspection.
+      - Tests cover project directory auto-creation for a new project/type path and preserve overwrite protection.
+    failure_modes:
+      - scenario: Tests assert implementation details instead of public return/filesystem behavior.
+        likelihood: medium
+        impact: medium
+        mitigation: Keep assertions on returned dict, relative path, emitted file content, and monkeypatched indexer calls only.
+    tech_stack: [Python, pytest, PyYAML, pathlib]
+    test_coverage: Exhaustive unit coverage for save_obsidian_note edge cases before implementation.
+    research_sources: [docs/plan/research_findings_architecture.yaml]
+    requires_review: false
+    review_depth: null
+    review_security_sensitive: true
+
+  - id: T02-vault-backup-preflight
+    title: Create verified Vault backup and no-clobber preflight
+    description: Prepare reversible Vault cleanup by creating a timestamped backup outside the Vault, producing a manifest, verifying file count/hash/size, and checking all move destinations before mutation.
+    wave: 1
+    agent: gem-devops
+    prototype: false
+    covers:
+      - unique timestamped backup path outside Vault
+      - manifest of source and backup files
+      - file count, sha256, and size verification
+      - no-clobber preflight for every Vault move destination
+      - deletion dependency for projects/project-a backup verification
+    priority: high
+    status: pending
+    flags: {flaky: false, retries_used: 0}
+    dependencies: []
+    conflicts_with: [T04-vault-structure-cleanup, T05-vault-project-a-quarantine-delete]
+    context_files:
+      - path: d:/Obsidian Vault/homework/docs/superpowers/specs/2026-05-17-frontmatter-field-rename-design.md
+        description: Vault cleanup specification and exact move/delete scope.
+      - path: d:/Obsidian Vault/homework/knowledge/knowledge-note.md
+        description: Template to be migrated to templates/.
+      - path: d:/Obsidian Vault/homework/projects/project-a
+        description: User-approved deletion target requiring reversible backup/quarantine.
+    planning_pass: 2
+    planning_history:
+      - pass: 2
+        reason: Reviewer required stronger backup, manifest, no-clobber, and reversible deletion.
+        timestamp: "2026-05-17T00:00:00+08:00"
+    estimated_effort: medium
+    estimated_files: 1
+    estimated_lines: 120
+    focus_area: vault-safety
+    verification:
+      - "Assert Test-Path $backupRoot is true and $backupRoot is not under d:/Obsidian Vault/homework."
+      - "Assert manifest.verified -eq $true, manifest.file_count equals backed-up file count, and every source/backup sha256+size pair matches."
+      - "Assert every planned destination path does not exist before cleanup; if any exists, stop/report without mutation."
+    acceptance_criteria:
+      - Backup root name includes a timestamp and is outside the Vault, e.g. ../homework-backups/20260517-HHmmss-save-obsidian-note/.
+      - Manifest covers all files under knowledge/cross-project, knowledge/knowledge-note.md, templates targeted for field edits, README.md, Index.md, docs/plan/20260515-obsidian-vault-optimization/plan.yaml, and projects/project-a.
+      - Any unexpected destination collision aborts the plan before moves or deletion.
+      - No user confirmation pause is introduced.
+    failure_modes:
+      - scenario: Backup is accidentally created inside the Vault and then indexed or moved.
+        likelihood: medium
+        impact: high
+        mitigation: Assert backupRoot is outside vaultRoot before copy; include this as a hard precondition.
+    tech_stack: [PowerShell, SHA256, filesystem]
+    test_coverage: Manual/command assertions with explicit boolean failures.
+    research_sources: []
+    requires_review: false
+    review_depth: null
+    review_security_sensitive: true
+    environment: development
+    requires_approval: false
+    devops_security_sensitive: true
+
+  - id: T03-rag-implement-save-note
+    title: Implement save_obsidian_note MCP tool
+    description: Add note_writer core logic and server registration to satisfy the expanded TDD suite without broad refactors.
+    wave: 2
+    agent: gem-implementer
+    prototype: false
+    covers:
+      - note_writer.save_obsidian_note public function
+      - server.py MCP registration and thin wrapper
+      - yaml.safe_dump frontmatter generation
+      - content-only redaction and redacted_count
+      - project note directory creation with path traversal/overwrite protection
+      - auto_index behavior and non-blocking index errors
+    priority: high
+    status: pending
+    flags: {flaky: false, retries_used: 0}
+    dependencies: [T01-rag-tdd-save-note]
+    conflicts_with: []
+    context_files:
+      - path: f:/vscode projects folder/netsuite-rag-mcp/src/netsuite_rag_mcp/server.py
+        description: MCP wrapper/import pattern and index_sources_tool style.
+      - path: f:/vscode projects folder/netsuite-rag-mcp/src/netsuite_rag_mcp/redaction.py
+        description: Existing sensitive-text redaction dependency.
+      - path: f:/vscode projects folder/netsuite-rag-mcp/src/netsuite_rag_mcp/indexer.py
+        description: index_sources(vault_root, source_names, mode) API.
+    planning_pass: 2
+    planning_history:
+      - pass: 2
+        reason: Incorporate reviewer-required behavior and safe project directory creation strategy.
+        timestamp: "2026-05-17T00:00:00+08:00"
+    estimated_effort: medium
+    estimated_files: 3
+    estimated_lines: 290
+    focus_area: rag-tool
+    verification:
+      - "Run: pytest tests/test_save_obsidian_note.py tests/test_server_tools.py -q"
+      - "Run: pytest -q"
+    acceptance_criteria:
+      - All T01 tests pass.
+      - Return schema uses ok/path/absolute_path/created/redacted_count/indexed on success and ok:false/error/code on handled errors.
+      - auto_index=False returns indexed: null; index exceptions return ok:true with indexed.error.
+      - Explicit filename without extension writes .md; empty slug returns code empty_slug.
+      - Project note writes create the needed project/type directory only after path safety validation and never overwrite unless overwrite=True.
+    failure_modes:
+      - scenario: yaml.safe_dump emits Python-specific tags or unstable ordering.
+        likelihood: low
+        impact: high
+        mitigation: Use safe_dump(sort_keys=False, allow_unicode=True) on plain dict/list/scalar values and parse in tests.
+      - scenario: Directory creation happens before path traversal validation.
+        likelihood: medium
+        impact: high
+        mitigation: Resolve and validate final path under vault_root before mkdir/write.
+    tech_stack: [Python, MCP FastMCP, PyYAML, pathlib, pytest]
+    test_coverage: Tests from T01 plus server wrapper registration coverage.
+    research_sources: [docs/plan/research_findings_architecture.yaml]
+    requires_review: false
+    review_depth: null
+    review_security_sensitive: true
+
+  - id: T04-vault-structure-cleanup
+    title: Apply Vault field rename and knowledge path cleanup safely
+    description: Rename frontmatter fields in retained files, move knowledge domains up one level, migrate knowledge template, and update Vault docs/index references using no-clobber moves.
+    wave: 2
+    agent: gem-implementer
+    prototype: false
+    covers:
+      - related_records to related_objects in retained frontmatter only
+      - related_script_ids to related_scripts in retained frontmatter only
+      - merge old/new frontmatter field values with stable de-duplication
+      - knowledge/cross-project/<domain> to knowledge/<domain>
+      - knowledge/knowledge-note.md to templates/knowledge-note.md
+      - README.md and Index.md references to new structure
+      - no-clobber preflight for every move
+    priority: high
+    status: pending
+    flags: {flaky: false, retries_used: 0}
+    dependencies: [T02-vault-backup-preflight]
+    conflicts_with: [T05-vault-project-a-quarantine-delete]
+    context_files:
+      - path: d:/Obsidian Vault/homework/docs/superpowers/specs/2026-05-17-frontmatter-field-rename-design.md
+        description: Exact Vault cleanup source spec.
+      - path: d:/Obsidian Vault/homework/templates/decision-note.md
+        description: Retained template field rename target.
+      - path: d:/Obsidian Vault/homework/knowledge/cross-project
+        description: Source directory for domain moves.
+    planning_pass: 2
+    planning_history:
+      - pass: 2
+        reason: Add no-clobber and scoped validation requirements.
+        timestamp: "2026-05-17T00:00:00+08:00"
+    estimated_effort: medium
+    estimated_files: 3
+    estimated_lines: 180
+    focus_area: vault-structure
+    verification:
+      - "Assert old fields are absent from retained frontmatter files only: templates/*.md, templates/scripts/*.md, templates/objects/*.md, knowledge/**/*.md excluding docs/superpowers/specs/** and docs/plan/**."
+      - "Assert Test-Path 'knowledge/cross-project' is false."
+      - "Assert Test-Path for four knowledge/<domain>/<note>.md destinations is true."
+      - "Assert Test-Path 'templates/knowledge-note.md' is true and 'knowledge/knowledge-note.md' is false."
+    acceptance_criteria:
+      - No retained frontmatter uses related_records or related_script_ids.
+      - Existing content outside frontmatter is not rewritten except README.md/Index.md/plan note references required by the spec.
+      - If any destination exists unexpectedly, task stops and reports; no overwrite is performed.
+    failure_modes:
+      - scenario: Global replace edits markdown body examples or spec history.
+        likelihood: medium
+        impact: medium
+        mitigation: Read/parse frontmatter per file; use scoped validation excluding specs and plan artifacts.
+    tech_stack: [Markdown, YAML frontmatter, PowerShell or Python filesystem APIs]
+    test_coverage: Boolean filesystem/content assertions after cleanup.
+    research_sources: []
+    requires_review: false
+    review_depth: null
+    review_security_sensitive: false
+
+  - id: T05-vault-project-a-quarantine-delete
+    title: Quarantine and delete sample project-a reversibly
+    description: Remove the user-approved sample project after verified backup by moving it to quarantine first, then leaving projects/.gitkeep in the active Vault.
+    wave: 2
+    agent: gem-devops
+    prototype: false
+    covers:
+      - user-approved deletion of projects/project-a without confirmation pause
+      - reversible deletion through verified backup/quarantine
+      - projects/.gitkeep placeholder
+    priority: high
+    status: pending
+    flags: {flaky: false, retries_used: 0}
+    dependencies: [T02-vault-backup-preflight]
+    conflicts_with: [T04-vault-structure-cleanup]
+    context_files:
+      - path: d:/Obsidian Vault/homework/projects/project-a
+        description: Deletion target selected by the user.
+      - path: d:/Obsidian Vault/homework/projects
+        description: Directory that must remain with .gitkeep only.
+    planning_pass: 2
+    planning_history:
+      - pass: 2
+        reason: Reviewer required deletion remain allowed but reversible.
+        timestamp: "2026-05-17T00:00:00+08:00"
+    estimated_effort: small
+    estimated_files: 1
+    estimated_lines: 40
+    focus_area: vault-cleanup
+    verification:
+      - "Assert backup manifest has at least one projects/project-a entry and verified -eq $true before removal."
+      - "Assert Test-Path 'projects/project-a' is false after cleanup."
+      - "Assert projects directory children exactly equal ['.gitkeep']."
+    acceptance_criteria:
+      - No user confirmation pause is added.
+      - projects/project-a can be restored from backup/quarantine manifest.
+      - Active projects/ contains only .gitkeep.
+    failure_modes:
+      - scenario: Quarantine and active Vault copy both remain, causing validation/index drift.
+        likelihood: medium
+        impact: medium
+        mitigation: Keep quarantine outside indexed Vault paths or outside Vault; assert active projects/project-a is absent.
+    tech_stack: [PowerShell, filesystem]
+    test_coverage: Boolean filesystem assertions.
+    research_sources: []
+    requires_review: false
+    review_depth: null
+    review_security_sensitive: true
+    environment: development
+    requires_approval: false
+    devops_security_sensitive: true
+
+  - id: T06-vault-reindex
+    title: Reindex obsidian source after Vault structural cleanup
+    description: Explicitly refresh the RAG index for the obsidian source after Vault moves/deletion and before final search validation.
+    wave: 3
+    agent: gem-devops
+    prototype: false
+    covers:
+      - explicit Vault reindex after structural cleanup
+      - source_names=["obsidian"] scoped indexing
+      - final search validation dependency
+    priority: high
+    status: pending
+    flags: {flaky: false, retries_used: 0}
+    dependencies: [T04-vault-structure-cleanup, T05-vault-project-a-quarantine-delete]
+    conflicts_with: []
+    context_files:
+      - path: f:/vscode projects folder/netsuite-rag-mcp/src/netsuite_rag_mcp/server.py
+        description: index_sources_tool wrapper.
+      - path: f:/vscode projects folder/netsuite-rag-mcp/src/netsuite_rag_mcp/indexer.py
+        description: index_sources implementation and return schema.
+      - path: d:/Obsidian Vault/homework/rag/sources.yaml
+        description: Vault source configuration.
+    planning_pass: 2
+    planning_history:
+      - pass: 2
+        reason: Reviewer required explicit reindex before final search validation.
+        timestamp: "2026-05-17T00:00:00+08:00"
+    estimated_effort: small
+    estimated_files: 0
+    estimated_lines: 0
+    focus_area: indexing
+    verification:
+      - "Run a scoped index_sources call for vault_root='d:/Obsidian Vault/homework', source_names=['obsidian'], mode='full' or 'incremental'."
+      - "Assert result.sources.obsidian exists and result.total_errors == 0."
+    acceptance_criteria:
+      - Reindex runs only after T04 and T05 complete.
+      - Returned index result is checked with explicit boolean assertions.
+      - Final search validation is not attempted before this task passes.
+    failure_modes:
+      - scenario: Reindex uses cwd or wrong vault_root and validates stale data.
+        likelihood: medium
+        impact: high
+        mitigation: Pass absolute vault_root and assert returned source name obsidian.
+    tech_stack: [Python, netsuite_rag_mcp.indexer, PowerShell]
+    test_coverage: Command-level assertion of index result.
+    research_sources: [docs/plan/research_findings_architecture.yaml]
+    requires_review: false
+    review_depth: null
+    review_security_sensitive: false
+    environment: development
+    requires_approval: false
+    devops_security_sensitive: false
+
+  - id: T07-documentation
+    title: Update user-facing documentation for new tool and Vault structure
+    description: Update only required README/docs references for save_obsidian_note and the new Vault knowledge/template paths.
+    wave: 3
+    agent: gem-documentation-writer
+    prototype: false
+    covers:
+      - RAG README tool list and save note example
+      - Vault README/Index references to knowledge/<domain> and templates/knowledge-note.md
+      - docs/plan/20260515-obsidian-vault-optimization/plan.yaml note about post-2026-05-17 structure
+    priority: medium
+    status: pending
+    flags: {flaky: false, retries_used: 0}
+    dependencies: [T03-rag-implement-save-note, T04-vault-structure-cleanup]
+    conflicts_with: []
+    context_files:
+      - path: f:/vscode projects folder/netsuite-rag-mcp/README.md
+        description: RAG documentation target.
+      - path: d:/Obsidian Vault/homework/README.md
+        description: Vault structure documentation target.
+      - path: d:/Obsidian Vault/homework/Index.md
+        description: Vault navigation target.
+    planning_pass: 2
+    planning_history:
+      - pass: 2
+        reason: New MCP tool requires final documentation task.
+        timestamp: "2026-05-17T00:00:00+08:00"
+    estimated_effort: small
+    estimated_files: 3
+    estimated_lines: 120
+    focus_area: documentation
+    verification:
+      - "Assert RAG README mentions save_obsidian_note and does not document old related_records/related_script_ids as active fields."
+      - "Assert Vault README/Index mention knowledge/<domain> instead of knowledge/cross-project outside explicitly excluded specs."
+    acceptance_criteria:
+      - Documentation matches implemented tool signature and return schema.
+      - No new markdown design/change-summary files are created.
+      - Historical strings in specs are left untouched and excluded from validation.
+    failure_modes:
+      - scenario: Documentation task rewrites historical specs to satisfy grep.
+        likelihood: medium
+        impact: medium
+        mitigation: Scope documentation edits to README/Index/approved plan note; exclude specs from validation.
+    tech_stack: [Markdown]
+    test_coverage: Scoped text assertions.
+    research_sources: []
+    requires_review: false
+    review_depth: null
+    review_security_sensitive: false
+    task_type: update
+    audience: developers
+    coverage_matrix:
+      - save_obsidian_note signature and example
+      - active Vault knowledge path
+      - active related_objects/related_scripts fields
+
+  - id: T08-final-validation
+    title: Run scoped boolean validation and final review
+    description: Validate RAG tests, Vault structure, scoped historical-string checks, backup reversibility, explicit reindex result, and final search behavior.
+    wave: 4
+    agent: gem-reviewer
+    prototype: false
+    covers:
+      - scoped grep validation excluding specs/plan artifacts
+      - clear boolean validation assertions
+      - pytest all green
+      - backup manifest verified
+      - final search after reindex
+      - security review for path traversal/YAML injection/overwrite behavior
+    priority: high
+    status: pending
+    flags: {flaky: false, retries_used: 0}
+    dependencies: [T03-rag-implement-save-note, T06-vault-reindex, T07-documentation]
+    conflicts_with: []
+    context_files:
+      - path: f:/vscode projects folder/netsuite-rag-mcp/tests/test_save_obsidian_note.py
+        description: Primary RAG TDD validation.
+      - path: d:/Obsidian Vault/homework
+        description: Active Vault validation root.
+      - path: f:/vscode projects folder/netsuite-rag-mcp/docs/plan/20260517-save-obsidian-note/plan.yaml
+        description: Revised plan artifact excluded from grep validation where appropriate.
+    planning_pass: 2
+    planning_history:
+      - pass: 2
+        reason: Reviewer required scoped checks and explicit boolean assertions.
+        timestamp: "2026-05-17T00:00:00+08:00"
+    estimated_effort: medium
+    estimated_files: 0
+    estimated_lines: 0
+    focus_area: validation
+    verification:
+      - "RAG: pytest -q returns exit code 0."
+      - "Vault old-field check: scan only active retained frontmatter/documentation targets; exclude docs/superpowers/specs/** and docs/plan/**; assert hit count == 0."
+      - "Vault cross-project check: scan README.md, Index.md, templates/**, knowledge/** only; assert hit count == 0."
+      - "Projects check: assert projects children exactly ['.gitkeep']."
+      - "Knowledge check: assert four domain directories and four migrated notes exist; assert knowledge/cross-project and knowledge/knowledge-note.md do not exist."
+      - "Search check after T06: search_netsuite_knowledge with related_objects=salesorder returns at least one migrated knowledge note."
+    acceptance_criteria:
+      - All validations use boolean assertions that fail the command/test on mismatch.
+      - Specs themselves are not edited merely to remove historical strings.
+      - Final review reports no blocking security issue for path traversal, overwrite protection, YAML injection, or backup reversibility.
+    failure_modes:
+      - scenario: Reviewer relies on text output inspection and misses failure.
+        likelihood: medium
+        impact: high
+        mitigation: Require commands/tests to throw or return non-zero on false assertions.
+    tech_stack: [pytest, PowerShell, Python, MCP/RAG search]
+    test_coverage: Full test suite plus filesystem/index/search assertions.
+    research_sources: [docs/plan/research_findings_architecture.yaml]
+    requires_review: true
+    review_depth: full
+    review_security_sensitive: true
+learnings:
+  risks:
+    - Scoped validation is required because specs and plan artifacts intentionally contain historical field/path strings.
+    - Vault deletion can proceed without a new confirmation only if verified backup/quarantine makes it reversible.
+  patterns:
+    - Split RAG tool work into TDD then implementation; split Vault destructive cleanup into backup/preflight, mutation, reindex, validation.
+    - For YAML frontmatter tools, test serialized output by parsing with yaml.safe_load and covering injection-like scalar values.
+  user_prefs:
+    - Keep Obsidian and RAG specs separate under docs/superpowers/specs/.
+    - Do not create extra markdown change-summary files unless requested.
+  research_used:
+    - docs/plan/research_findings_architecture.yaml
+    - docs/superpowers/specs/2026-05-17-save-obsidian-note-tool-design.md
+    - homework/docs/superpowers/specs/2026-05-17-frontmatter-field-rename-design.md

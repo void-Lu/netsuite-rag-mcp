@@ -23,6 +23,7 @@
 | `search_netsuite_knowledge` | 语义搜索 + 元数据过滤，返回 chunk（带引用） |
 | `ask_netsuite_rag` | 搜索 → 路由 → 冲突检测 → 组装上下文 → 返回结构化答案 |
 | `get_index_status` | 返回索引状态：每个数据源的文件数、最后索引时间、git 信息 |
+| `save_obsidian_note` | 将结构化 Obsidian 笔记保存到 Vault，并可选触发增量索引 |
 
 ## 📦 快速部署
 
@@ -93,8 +94,8 @@ sources:
   #   source_kind: code
   #   root: ../netsuite-repos
   #   include:
-  #     - project-a
-  #     - project-b
+  #     - suiteapp-order-sync
+  #     - netsuite-customizations
   #   exclude:
   #     - .git
   #     - node_modules
@@ -164,6 +165,12 @@ sources:
 请调用 ask_netsuite_rag，question 设为 "afterSubmit 的实现逻辑"，source_kind 设为 "code"
 ```
 
+保存一条知识笔记到 `knowledge/<domain>/`，并自动写入新字段名的 frontmatter：
+
+```text
+请调用 save_obsidian_note，note_type 设为 "knowledge"，domain 设为 "suitescript-patterns"，title 设为 "RESTlet 提交流程经验"，content 设为 "## 适用场景\n..."
+```
+
 ## 📝 Obsidian 笔记模板
 
 项目提供 NetSuite 相关笔记模板，按类别存放在 `templates/` 子目录中，复制到你的 Vault 中使用。
@@ -200,6 +207,8 @@ sources:
 | `decision-note.md` | 技术决策记录 | `decision_status`, `decision_date`, `related_scripts` |
 | `knowledge-note.md` | 知识/经验笔记 | `topic`, `related_script_types`, `related_objects` |
 
+知识/经验笔记按领域存放在 `knowledge/<domain>/`，例如 `knowledge/common-errors/`、`knowledge/integration-patterns/`、`knowledge/netsuite-object-playbooks/`、`knowledge/suitescript-patterns/`。
+
 多数模板共享以下元数据过滤字段：
 
 - `project` — 项目名称
@@ -225,7 +234,7 @@ pytest
 │   └── sources.yaml                       # 数据源配置（v2 多源 schema）
 ├── src/netsuite_rag_mcp/
 │   ├── __init__.py
-│   ├── server.py                          # FastMCP 服务器入口（5 个 MCP 工具）
+│   ├── server.py                          # FastMCP 服务器入口（6 个 MCP 工具）
 │   ├── config.py                          # 配置加载（v1/v2 自动迁移）
 │   ├── models.py                          # 数据模型（SourceConfig, RoutingResult 等）
 │   ├── parser.py                          # Markdown/SuiteScript 解析器
