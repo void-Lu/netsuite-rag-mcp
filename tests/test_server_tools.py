@@ -62,8 +62,8 @@ type: script
 project: project-a
 script_type: restlet
 script_id: customscript_order_sync_restlet
-related_records: [salesorder]
-related_script_ids: []
+related_objects: [salesorder]
+related_scripts: []
 status: active
 ---
 

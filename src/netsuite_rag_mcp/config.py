@@ -10,7 +10,7 @@ from netsuite_rag_mcp.models import RagConfig, SourceConfig
 DEFAULT_INCLUDE = ["projects", "knowledge"]
 DEFAULT_EXCLUDE = [".git", ".obsidian", ".superpowers", ".rag-index"]
 DEFAULT_CHROMA_PATH = ".rag-index/chroma"
-DEFAULT_COLLECTION = "netsuite_notes"
+DEFAULT_COLLECTION = "netsuite_knowledge"
 DEFAULT_EMBEDDING_MODEL = "BAAI/bge-m3"
 DEFAULT_EMBEDDING_CACHE_PATH = ".models"
 
