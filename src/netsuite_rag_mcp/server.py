@@ -50,7 +50,7 @@ def index_sources_tool(
     embedder: Embedder | None = None,
 ) -> dict[str, Any]:
     if mode not in {"full", "incremental"}:
-        return {"error": "mode must be 'full' or 'incremental'", "mode": mode}
+        return {"ok": False, "code": "invalid_mode", "error": "mode must be 'full' or 'incremental'", "mode": mode}
     try:
         runtime = _resolve_runtime(vault_root)
         return run_index_sources(
@@ -58,8 +58,8 @@ def index_sources_tool(
         )
     except RuntimeConfigError as exc:
         return _runtime_error_payload(exc)
-    except Exception as exc:
-        return {"error": str(exc)}
+    except ValueError as exc:
+        return {"ok": False, "code": "invalid_index_request", "error": str(exc)}
 
 
 def search_netsuite_knowledge_tool(
