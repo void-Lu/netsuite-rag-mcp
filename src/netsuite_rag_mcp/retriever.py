@@ -531,7 +531,10 @@ def search_netsuite_knowledge(
     store: ChromaVectorStore | None = None,
 ) -> dict[str, Any]:
     config = load_config(vault_root)
-    selected_embedder = embedder or SentenceTransformerEmbedder(config.embedding_model)
+    selected_embedder = embedder or SentenceTransformerEmbedder(
+        config.embedding_model,
+        cache_folder=config.embedding_cache_path,
+    )
     vector_store = store or ChromaVectorStore(
         config.chroma_path, config.collection_name, selected_embedder
     )

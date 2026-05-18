@@ -39,3 +39,4 @@ def test_preload_embedding_model_uses_configured_model_and_cache(monkeypatch, tm
         "cache_path": str(runtime.embedding_cache_path),
         "status": "ready",
     }
+    assert not (vault / ".models").exists()
