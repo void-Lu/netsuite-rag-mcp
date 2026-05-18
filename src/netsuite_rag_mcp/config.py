@@ -6,7 +6,7 @@ from typing import Any
 import yaml
 
 from netsuite_rag_mcp.models import RagConfig, SourceConfig
-from netsuite_rag_mcp.runtime_config import RuntimeConfig, resolve_runtime_config
+from netsuite_rag_mcp.runtime_config import RuntimeConfig, RuntimeConfigError, resolve_runtime_config
 
 DEFAULT_INCLUDE = ["projects", "knowledge"]
 DEFAULT_EXCLUDE = [".git", ".obsidian", ".superpowers", ".rag-index"]
@@ -80,13 +80,22 @@ def load_config(
     config_path: str | Path | None = None,
     runtime_config: RuntimeConfig | None = None,
 ) -> RagConfig:
-    runtime = runtime_config or resolve_runtime_config(vault_root_arg=vault_root, require_sources_config=False)
+    explicit_config_path = Path(config_path).expanduser() if config_path is not None else None
+    explicit_config_exists = explicit_config_path is not None and explicit_config_path.exists()
+    runtime = runtime_config or resolve_runtime_config(
+        vault_root_arg=vault_root,
+        require_sources_config=not explicit_config_exists,
+    )
     root = runtime.vault_root
-    path = Path(config_path) if config_path else runtime.sources_config_path
+    path = explicit_config_path if explicit_config_path is not None else runtime.sources_config_path
     raw: dict[str, Any] = {}
-    if path.exists():
-        loaded = yaml.safe_load(path.read_text(encoding="utf-8"))
-        raw = loaded if isinstance(loaded, dict) else {}
+    if not path.exists():
+        raise RuntimeConfigError(
+            f"Vault root {root} does not contain required source config {path}.",
+            code="missing_sources_config",
+        )
+    loaded = yaml.safe_load(path.read_text(encoding="utf-8"))
+    raw = loaded if isinstance(loaded, dict) else {}
 
     # Detect schema version: v1 has no schema_version (or has vault_root at top level)
     is_v1 = "schema_version" not in raw

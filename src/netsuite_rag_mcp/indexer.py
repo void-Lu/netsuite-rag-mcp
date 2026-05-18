@@ -19,8 +19,6 @@ from netsuite_rag_mcp.parser import parse_code_file, parse_markdown_file
 from netsuite_rag_mcp.parser_xml_json import parse_json_config, parse_xml_file
 from netsuite_rag_mcp.vector_store import ChromaVectorStore, Embedder, SentenceTransformerEmbedder
 
-MANIFEST_PATH = ".rag-index/index-manifest.json"
-
 # ── Parser/chunker routing table ─────────────────────────────────────────────
 # Maps (parser_name, file_extension) → (parse_func_name, chunk_func_name)
 _ROUTE_TABLE: dict[tuple[str, str], tuple[str, str]] = {

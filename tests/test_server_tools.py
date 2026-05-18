@@ -91,6 +91,7 @@ define(['N/record'], function(record) {
 def test_index_status_before_index(tmp_path: Path):
     vault = tmp_path / "vault"
     vault.mkdir()
+    _write_v2_config(vault)
 
     status = get_index_status_tool(str(vault))
 

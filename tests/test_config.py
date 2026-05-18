@@ -1,8 +1,10 @@
 from pathlib import Path
 
+import pytest
+
 from netsuite_rag_mcp.config import load_config
 from netsuite_rag_mcp.models import SourceConfig
-from netsuite_rag_mcp.runtime_config import resolve_runtime_config
+from netsuite_rag_mcp.runtime_config import RuntimeConfigError, resolve_runtime_config
 
 
 def test_load_config_resolves_paths(tmp_path: Path):
@@ -77,19 +79,61 @@ def test_load_config_uses_runtime_paths_when_index_section_missing(tmp_path: Pat
     assert config.sources[0].collection == "netsuite_knowledge"
 
 
-def test_load_config_uses_runtime_paths_when_sources_file_missing(tmp_path: Path):
-    config = load_config(tmp_path)
+def test_load_config_requires_sources_yaml_by_default(tmp_path: Path):
+    with pytest.raises(RuntimeConfigError) as exc_info:
+        load_config(tmp_path)
 
-    assert config.vault_root == tmp_path.resolve()
-    assert config.include_paths == [tmp_path / "projects", tmp_path / "knowledge"]
-    assert config.exclude_names == {".git", ".obsidian", ".superpowers", ".rag-index"}
-    assert not config.chroma_path.is_relative_to(tmp_path)
-    assert config.collection_name == "netsuite_knowledge"
-    assert config.embedding_model == "BAAI/bge-m3"
-    assert not config.embedding_cache_path.is_relative_to(tmp_path)
-    assert not config.manifest_path.is_relative_to(tmp_path)
-    assert len(config.sources) == 1
-    assert config.sources[0].collection == "netsuite_knowledge"
+    assert exc_info.value.code == "missing_sources_config"
+    assert "rag/sources.yaml" in str(exc_info.value)
+
+
+def test_load_config_uses_existing_explicit_config_path(tmp_path: Path):
+    vault = tmp_path / "vault"
+    explicit_config = tmp_path / "explicit-sources.yaml"
+    vault.mkdir()
+    explicit_config.write_text(
+        "\n".join(
+            [
+                "schema_version: 2",
+                "workspace_root: .",
+                "index:",
+                "  embedding_model: fake",
+                "sources:",
+                "  - source_name: obsidian",
+                "    source_kind: note",
+                "    root: .",
+                "    include: [knowledge]",
+                "    exclude: [.git, .obsidian]",
+                "    file_types: [md]",
+                "    parser: markdown_frontmatter_h2",
+                "    collection: netsuite_notes",
+                "    authority: curated_note_source",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    config = load_config(vault, config_path=explicit_config)
+
+    assert config.embedding_model == "fake"
+    assert config.collection_name == "netsuite_notes"
+    assert config.sources[0].include == ["knowledge"]
+
+
+def test_load_config_rejects_missing_explicit_config_path(tmp_path: Path):
+    vault = tmp_path / "vault"
+    vault.mkdir()
+    (vault / "rag").mkdir()
+    (vault / "rag" / "sources.yaml").write_text(
+        "schema_version: 2\nworkspace_root: .\nsources: []\n",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(RuntimeConfigError) as exc_info:
+        load_config(vault, config_path=tmp_path / "missing-sources.yaml")
+
+    assert exc_info.value.code == "missing_sources_config"
+    assert "missing-sources.yaml" in str(exc_info.value)
 
 
 def test_load_config_resolves_custom_embedding_cache_path(tmp_path: Path):

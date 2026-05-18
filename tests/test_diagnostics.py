@@ -15,6 +15,42 @@ from netsuite_rag_mcp.vector_store import ChromaVectorStore, FakeEmbedder
 # ── _detect_stale_sources() tests ──────────────────────────────────────────────
 
 
+def _write_sources_config(vault: Path) -> None:
+    (vault / "rag").mkdir(parents=True, exist_ok=True)
+    (vault / "rag" / "sources.yaml").write_text(
+        "\n".join(
+            [
+                "schema_version: 2",
+                "workspace_root: .",
+                "index:",
+                "  embedding_model: fake",
+                "  collections:",
+                "    default: test_diagnostics",
+                "sources:",
+                "  - source_name: obsidian",
+                "    source_kind: note",
+                "    root: .",
+                "    include: [projects]",
+                "    exclude: [.git, .obsidian]",
+                "    file_types: [md]",
+                "    parser: markdown_frontmatter_h2",
+                "    collection: test_diagnostics",
+                "    authority: curated_note_source",
+                "  - source_name: netsuite_repo",
+                "    source_kind: code",
+                "    root: .",
+                "    include: [src]",
+                "    exclude: [.git, node_modules]",
+                "    file_types: [js]",
+                "    parser: suitescript_code_and_config",
+                "    collection: test_diagnostics",
+                "    authority: curated_code_source",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+
 class TestDetectStaleSources:
     """Test stale source detection — notes that are significantly older than code."""
 
@@ -336,6 +372,7 @@ class TestDetectDirtySources:
 
 def _setup_store_for_diagnostics(tmp_path: Path) -> ChromaVectorStore:
     """Create a store with mixed sources including stale and dirty."""
+    _write_sources_config(tmp_path)
     store = ChromaVectorStore(tmp_path / "chroma", "test_diagnostics", FakeEmbedder())
 
     note_chunk = Chunk(

@@ -11,6 +11,42 @@ from netsuite_rag_mcp.vector_store import ChromaVectorStore, FakeEmbedder
 # ── RoutingResult dataclass tests ─────────────────────────────────────────────
 
 
+def _write_sources_config(vault: Path) -> None:
+    (vault / "rag").mkdir(parents=True, exist_ok=True)
+    (vault / "rag" / "sources.yaml").write_text(
+        "\n".join(
+            [
+                "schema_version: 2",
+                "workspace_root: .",
+                "index:",
+                "  embedding_model: fake",
+                "  collections:",
+                "    default: test_routing",
+                "sources:",
+                "  - source_name: obsidian",
+                "    source_kind: note",
+                "    root: .",
+                "    include: [projects]",
+                "    exclude: [.git, .obsidian]",
+                "    file_types: [md]",
+                "    parser: markdown_frontmatter_h2",
+                "    collection: test_routing",
+                "    authority: curated_note_source",
+                "  - source_name: netsuite_repo",
+                "    source_kind: code",
+                "    root: .",
+                "    include: [src]",
+                "    exclude: [.git, node_modules]",
+                "    file_types: [js]",
+                "    parser: suitescript_code_and_config",
+                "    collection: test_routing",
+                "    authority: curated_code_source",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+
 class TestRoutingResultDataclass:
     """Test that RoutingResult is a properly configured frozen dataclass."""
 
@@ -204,6 +240,7 @@ class TestRouteQueryExplicitSourceKind:
 
 def _setup_store_with_mixed_sources(tmp_path: Path) -> ChromaVectorStore:
     """Create a store with both note and code chunks."""
+    _write_sources_config(tmp_path)
     store = ChromaVectorStore(tmp_path / "chroma", "test_routing", FakeEmbedder())
 
     note_chunk = Chunk(
