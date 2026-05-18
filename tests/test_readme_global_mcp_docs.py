@@ -1,3 +1,4 @@
+import re
 from pathlib import Path
 
 
@@ -22,3 +23,23 @@ def test_readme_documents_global_mcp_storage_split():
     assert "NETSUITE_RAG_VAULT_ROOT" not in text
     assert "chroma_path: .rag-index/chroma" not in text
     assert "embedding_cache_path: .models" not in text
+
+
+def test_readme_global_mcp_interpreter_matches_install_interpreter():
+    text = Path("README.md").read_text(encoding="utf-8")
+
+    command_match = re.search(r'"command": "(?P<command>(?:[^"\\]|\\.)+)"', text)
+    assert command_match is not None
+
+    mcp_command = command_match.group("command")
+    powershell_command = mcp_command.replace("\\\\", "\\")
+    assert f'{powershell_command} -m pip install -e ".[dev]"' in text or (
+        f'{powershell_command} must have `netsuite-rag-mcp` installed' in text
+    )
+
+    venv_install = re.search(
+        r"python -m venv \.venv[\s\S]{0,500}?pip install -e \"\.\[dev\]\"[\s\S]{0,500}?mcp\.json",
+        text,
+        flags=re.IGNORECASE,
+    )
+    assert venv_install is None

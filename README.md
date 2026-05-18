@@ -33,28 +33,23 @@
 - **Git**
 - **VS Code** + Copilot 扩展
 
-### 步骤 1：克隆并安装
+### 步骤 1：克隆并安装到全局 MCP 使用的 Python
 
 ```powershell
 # 克隆仓库
 git clone https://github.com/void-Lu/netsuite-rag-mcp.git
 cd netsuite-rag-mcp
 
-# 创建虚拟环境
-python -m venv .venv
-
-# 激活虚拟环境
-# Windows PowerShell:
-.\.venv\Scripts\Activate.ps1
-# Linux/macOS:
-# source .venv/bin/activate
-
-# 安装依赖（国内用户可加 -i https://pypi.tuna.tsinghua.edu.cn/simple 加速）
-pip install -e ".[dev]"
+# 安装到后续 user-level mcp.json 中 command 使用的同一个解释器
+C:\Python314\python.exe -m pip install -e ".[dev]"
 
 # 可选：预下载 BGE-M3 embedding 模型到用户本地模型缓存
 netsuite-rag-mcp-preload-model
 ```
+
+> 如果你的 Python 路径不是 `C:\Python314\python.exe`，请同时替换上面的安装命令和后续 `mcp.json` 的 `command`。关键点是：VS Code user-level MCP config 中启动 server 的解释器，必须已经安装了 `netsuite-rag-mcp`。
+
+虚拟环境适合本仓库开发和运行测试；全局 MCP 配置不要指向工作区变量或项目 `.venv`，也不要依赖只安装在项目 `.venv` 里的包。
 
 安装后会暴露 3 个控制台命令：
 
