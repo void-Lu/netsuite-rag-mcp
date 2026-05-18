@@ -42,9 +42,6 @@ cd netsuite-rag-mcp
 
 # 安装到后续 user-level mcp.json 中 command 使用的同一个解释器
 C:\Python314\python.exe -m pip install -e ".[dev]"
-
-# 可选：预下载 BGE-M3 embedding 模型到用户本地模型缓存
-netsuite-rag-mcp-preload-model
 ```
 
 > 如果你的 Python 路径不是 `C:\Python314\python.exe`，请同时替换上面的安装命令和后续 `mcp.json` 的 `command`。关键点是：VS Code user-level MCP config 中启动 server 的解释器，必须已经安装了 `netsuite-rag-mcp`。
@@ -126,6 +123,9 @@ sources:
 ```powershell
 netsuite-rag-mcp init --vault homework --root "D:\Obsidian Vault\homework" --default
 netsuite-rag-mcp status
+
+# 可选：初始化 vault 配置后，预下载 BGE-M3 embedding 模型到用户本地模型缓存
+netsuite-rag-mcp-preload-model
 ```
 
 `netsuite-rag-mcp status` 会打印当前解析到的 vault、`rag/sources.yaml` 是否存在，以及 Chroma、manifest、model cache 的用户本地路径。
@@ -316,7 +316,7 @@ pytest
 
 ### Q: 首次运行 `index_vault` 很慢？
 
-A: 首次运行时会自动下载 `BAAI/bge-m3` 模型。建议安装依赖后先运行 `netsuite-rag-mcp-preload-model`，模型会缓存到用户本地数据目录（Windows 默认 `%LOCALAPPDATA%\netsuite-rag-mcp\models\`），后续运行直接使用本地缓存。
+A: 首次运行时会自动下载 `BAAI/bge-m3` 模型。建议先运行 `netsuite-rag-mcp init ... --default` 写入 vault 配置，再运行 `netsuite-rag-mcp-preload-model`；模型会缓存到用户本地数据目录（Windows 默认 `%LOCALAPPDATA%\netsuite-rag-mcp\models\`），后续运行直接使用本地缓存。
 
 ### Q: 需要配置 API Key 吗？
 

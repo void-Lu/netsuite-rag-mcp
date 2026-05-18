@@ -1,4 +1,5 @@
 import re
+import subprocess
 from pathlib import Path
 
 
@@ -23,6 +24,38 @@ def test_readme_documents_global_mcp_storage_split():
     assert "NETSUITE_RAG_VAULT_ROOT" not in text
     assert "chroma_path: .rag-index/chroma" not in text
     assert "embedding_cache_path: .models" not in text
+
+
+def test_repository_does_not_track_workspace_mcp_config():
+    if not Path(".git").exists():
+        return
+
+    result = subprocess.run(
+        ["git", "ls-files", "--", ".vscode/mcp.json"],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.stdout.strip() == ""
+
+
+def test_root_sources_yaml_omits_generated_state_paths():
+    text = Path("rag/sources.yaml").read_text(encoding="utf-8")
+
+    assert "chroma_path:" not in text
+    assert "embedding_cache_path:" not in text
+    assert "embedding_model: BAAI/bge-m3" in text
+    assert "default: netsuite_knowledge" in text
+
+
+def test_preload_guidance_comes_after_vault_initialization():
+    text = Path("README.md").read_text(encoding="utf-8")
+
+    init_position = text.index("netsuite-rag-mcp init --vault homework --root")
+    preload_command_position = text.index("\nnetsuite-rag-mcp-preload-model\n")
+
+    assert preload_command_position > init_position
 
 
 def test_readme_global_mcp_interpreter_matches_install_interpreter():
