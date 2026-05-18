@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import os
-from pathlib import Path
 from typing import Any
 
 from mcp.server.fastmcp import FastMCP
@@ -13,14 +11,21 @@ from netsuite_rag_mcp.manifest import read_manifest
 from netsuite_rag_mcp.note_writer import save_obsidian_note as run_save_obsidian_note
 from netsuite_rag_mcp.retriever import ask_netsuite_rag as run_ask_netsuite_rag
 from netsuite_rag_mcp.retriever import search_netsuite_knowledge as run_search_netsuite_knowledge
-from netsuite_rag_mcp.vector_store import ChromaVectorStore, Embedder, SentenceTransformerEmbedder
+from netsuite_rag_mcp.runtime_config import RuntimeConfig, RuntimeConfigError, resolve_runtime_config
+from netsuite_rag_mcp.vector_store import Embedder
 
 mcp = FastMCP("netsuite-obsidian-rag")
 
 
-def _default_vault_root(vault_root: str | None = None) -> Path:
-    value = vault_root or os.environ.get("NETSUITE_RAG_VAULT_ROOT") or os.getcwd()
-    return Path(value).expanduser().resolve()
+def _runtime_error_payload(exc: RuntimeConfigError) -> dict[str, Any]:
+    payload: dict[str, Any] = {"ok": False, "code": exc.code, "error": str(exc)}
+    if exc.config_path is not None:
+        payload["config_path"] = str(exc.config_path)
+    return payload
+
+
+def _resolve_runtime(vault_root: str | None = None) -> RuntimeConfig:
+    return resolve_runtime_config(vault_root_arg=vault_root)
 
 
 def index_vault_tool(
@@ -28,10 +33,13 @@ def index_vault_tool(
     mode: str = "incremental",
     embedder: Embedder | None = None,
 ) -> dict[str, Any]:
-    root = _default_vault_root(vault_root)
     if mode not in {"full", "incremental"}:
         return {"error": "mode must be 'full' or 'incremental'", "mode": mode}
-    return run_index_vault(root, mode=mode, embedder=embedder)
+    try:
+        runtime = _resolve_runtime(vault_root)
+        return run_index_vault(runtime.vault_root, mode=mode, embedder=embedder)
+    except RuntimeConfigError as exc:
+        return _runtime_error_payload(exc)
 
 
 def index_sources_tool(
@@ -41,13 +49,15 @@ def index_sources_tool(
     mode: str = "incremental",
     embedder: Embedder | None = None,
 ) -> dict[str, Any]:
-    root = _default_vault_root(vault_root)
     if mode not in {"full", "incremental"}:
         return {"error": "mode must be 'full' or 'incremental'", "mode": mode}
     try:
+        runtime = _resolve_runtime(vault_root)
         return run_index_sources(
-            root, source_names=source_names, source_kind=source_kind, mode=mode, embedder=embedder
+            runtime.vault_root, source_names=source_names, source_kind=source_kind, mode=mode, embedder=embedder
         )
+    except RuntimeConfigError as exc:
+        return _runtime_error_payload(exc)
     except Exception as exc:
         return {"error": str(exc)}
 
@@ -66,10 +76,14 @@ def search_netsuite_knowledge_tool(
     top_k: int = 5,
 ) -> dict[str, Any]:
     filters = _build_filters(project, script_type, related_objects, related_scripts, object_type, status, source_kind, source_name)
-    return run_search_netsuite_knowledge(
-        _default_vault_root(vault_root), question, filters=filters, top_k=top_k,
-        source_kind=source_kind, source_name=source_name,
-    )
+    try:
+        runtime = _resolve_runtime(vault_root)
+        return run_search_netsuite_knowledge(
+            runtime.vault_root, question, filters=filters, top_k=top_k,
+            source_kind=source_kind, source_name=source_name,
+        )
+    except RuntimeConfigError as exc:
+        return _runtime_error_payload(exc)
 
 
 def ask_netsuite_rag_tool(
@@ -86,19 +100,41 @@ def ask_netsuite_rag_tool(
     top_k: int = 5,
 ) -> dict[str, Any]:
     filters = _build_filters(project, script_type, related_objects, related_scripts, object_type, status, source_kind, source_name)
-    return run_ask_netsuite_rag(
-        _default_vault_root(vault_root), question, filters=filters, top_k=top_k,
-        source_kind=source_kind, source_name=source_name,
-    )
+    try:
+        runtime = _resolve_runtime(vault_root)
+        return run_ask_netsuite_rag(
+            runtime.vault_root, question, filters=filters, top_k=top_k,
+            source_kind=source_kind, source_name=source_name,
+        )
+    except RuntimeConfigError as exc:
+        return _runtime_error_payload(exc)
 
 
 def get_index_status_tool(vault_root: str | None = None) -> dict[str, Any]:
-    root = _default_vault_root(vault_root)
-    config = load_config(root)
+    try:
+        runtime = _resolve_runtime(vault_root)
+        config = load_config(runtime.vault_root, runtime_config=runtime)
+    except RuntimeConfigError as exc:
+        return _runtime_error_payload(exc)
     manifest_path = config.manifest_path
 
     base: dict[str, Any] = {
-        "vault_root": str(root),
+        "ok": True,
+        "vault_root": str(runtime.vault_root),
+        "resolution_source": runtime.resolution_source,
+        "config_path": str(runtime.global_config_path),
+        "global_config_path": str(runtime.global_config_path),
+        "sources_config_path": str(runtime.sources_config_path),
+        "sources_config_exists": runtime.sources_config_path.exists(),
+        "data_root": str(runtime.data_root),
+        "user_data_root": str(runtime.user_data_root),
+        "vault_data_root": str(runtime.vault_data_root),
+        "vault_storage_dir": str(runtime.vault_storage_dir),
+        "vault_storage_id": runtime.vault_storage_id,
+        "chroma_path": str(config.chroma_path),
+        "manifest_path": str(config.manifest_path),
+        "embedding_cache_path": str(config.embedding_cache_path),
+        "model_cache_path": str(config.embedding_cache_path),
         "manifest_exists": manifest_path.exists(),
     }
 
@@ -235,7 +271,7 @@ def index_vault(vault_root: str | None = None, mode: str = "incremental") -> dic
     """Index the Obsidian vault into the local ChromaDB collection.
 
     Args:
-        vault_root: Root path of the Obsidian vault. Defaults to NETSUITE_RAG_VAULT_ROOT env or cwd.
+        vault_root: Root path of the Obsidian vault. Defaults to NETSUITE_RAG_VAULT_ROOT env or global config.
         mode: "full" to rebuild index from scratch, "incremental" to only index changed files.
     """
     return index_vault_tool(vault_root=vault_root, mode=mode)

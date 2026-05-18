@@ -100,6 +100,68 @@ def test_index_status_before_index(tmp_path: Path):
     assert status["manifest_exists"] is False
 
 
+def test_server_status_does_not_use_cwd_as_vault(monkeypatch, tmp_path: Path):
+    cwd_vault = tmp_path / "cwd-vault"
+    cwd_vault.mkdir()
+    _write_v2_config(cwd_vault)
+    monkeypatch.chdir(cwd_vault)
+    monkeypatch.delenv("NETSUITE_RAG_VAULT_ROOT", raising=False)
+    monkeypatch.setenv("NETSUITE_RAG_CONFIG_DIR", str(tmp_path / "empty-config"))
+    monkeypatch.setenv("NETSUITE_RAG_USER_DATA_DIR", str(tmp_path / "user-data"))
+
+    status = get_index_status_tool()
+
+    assert status["ok"] is False
+    assert status["code"] == "missing_vault_root"
+    assert "netsuite-rag-mcp init --vault" in status["error"]
+
+
+def test_server_status_reports_runtime_paths_from_global_config(monkeypatch, tmp_path: Path):
+    from netsuite_rag_mcp.runtime_config import write_global_config
+
+    vault = tmp_path / "vault"
+    vault.mkdir()
+    _write_v2_config(vault)
+    config_dir = tmp_path / "config"
+    data_root = tmp_path / "user-data"
+    monkeypatch.setenv("NETSUITE_RAG_CONFIG_DIR", str(config_dir))
+    monkeypatch.setenv("NETSUITE_RAG_USER_DATA_DIR", str(data_root))
+    write_global_config(config_dir / "config.yaml", vault_name="homework", vault_root=vault, make_default=True)
+
+    status = get_index_status_tool()
+
+    assert status["ok"] is True
+    assert status["vault_root"] == str(vault.resolve())
+    assert status["resolution_source"] == "global_config"
+    assert status["config_path"] == str((config_dir / "config.yaml").resolve())
+    assert status["data_root"] == str(data_root.resolve())
+    assert status["vault_data_root"].startswith(str((data_root / "vaults").resolve()))
+    assert status["manifest_path"].endswith("index-manifest.json")
+    assert status["chroma_path"].endswith("chroma")
+    assert status["embedding_cache_path"] == str((data_root / "models").resolve())
+    assert status["sources_config_exists"] is True
+
+
+def test_server_status_reports_runtime_paths_from_env(monkeypatch, tmp_path: Path):
+    vault = tmp_path / "env-vault"
+    vault.mkdir()
+    _write_v2_config(vault)
+    config_dir = tmp_path / "empty-config"
+    data_root = tmp_path / "user-data"
+    monkeypatch.setenv("NETSUITE_RAG_VAULT_ROOT", str(vault))
+    monkeypatch.setenv("NETSUITE_RAG_CONFIG_DIR", str(config_dir))
+    monkeypatch.setenv("NETSUITE_RAG_USER_DATA_DIR", str(data_root))
+
+    status = get_index_status_tool()
+
+    assert status["ok"] is True
+    assert status["vault_root"] == str(vault.resolve())
+    assert status["resolution_source"] == "env"
+    assert status["global_config_path"] == str((config_dir / "config.yaml").resolve())
+    assert status["data_root"] == str(data_root.resolve())
+    assert status["sources_config_exists"] is True
+
+
 def test_index_vault_tool_uses_core_indexer(tmp_path: Path):
     vault = tmp_path / "vault"
     vault.mkdir()
