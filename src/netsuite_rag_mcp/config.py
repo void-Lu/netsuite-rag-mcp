@@ -6,6 +6,7 @@ from typing import Any
 import yaml
 
 from netsuite_rag_mcp.models import RagConfig, SourceConfig
+from netsuite_rag_mcp.runtime_config import RuntimeConfig, RuntimeConfigError, resolve_runtime_config
 
 DEFAULT_INCLUDE = ["projects", "knowledge"]
 DEFAULT_EXCLUDE = [".git", ".obsidian", ".superpowers", ".rag-index"]
@@ -74,13 +75,27 @@ def _parse_sources(sources: list[dict[str, Any]], resolved_root: Path) -> list[S
     return result
 
 
-def load_config(vault_root: str | Path, config_path: str | Path | None = None) -> RagConfig:
-    root = Path(vault_root).expanduser().resolve()
-    path = Path(config_path) if config_path else root / "rag" / "sources.yaml"
+def load_config(
+    vault_root: str | Path,
+    config_path: str | Path | None = None,
+    runtime_config: RuntimeConfig | None = None,
+) -> RagConfig:
+    explicit_config_path = Path(config_path).expanduser() if config_path is not None else None
+    explicit_config_exists = explicit_config_path is not None and explicit_config_path.exists()
+    runtime = runtime_config or resolve_runtime_config(
+        vault_root_arg=vault_root,
+        require_sources_config=not explicit_config_exists,
+    )
+    root = runtime.vault_root
+    path = explicit_config_path if explicit_config_path is not None else runtime.sources_config_path
     raw: dict[str, Any] = {}
-    if path.exists():
-        loaded = yaml.safe_load(path.read_text(encoding="utf-8"))
-        raw = loaded if isinstance(loaded, dict) else {}
+    if not path.exists():
+        raise RuntimeConfigError(
+            f"Vault root {root} does not contain required source config {path}.",
+            code="missing_sources_config",
+        )
+    loaded = yaml.safe_load(path.read_text(encoding="utf-8"))
+    raw = loaded if isinstance(loaded, dict) else {}
 
     # Detect schema version: v1 has no schema_version (or has vault_root at top level)
     is_v1 = "schema_version" not in raw
@@ -96,14 +111,9 @@ def load_config(vault_root: str | Path, config_path: str | Path | None = None) -
 
     # Parse index section
     index = raw.get("index", {})
-    chroma_path = _resolve_path(index.get("chroma_path", DEFAULT_CHROMA_PATH), resolved_root)
+    chroma_path = runtime.chroma_path
     embedding_model = str(index.get("embedding_model", raw.get("embedding_model", DEFAULT_EMBEDDING_MODEL)))
-    embedding_cache_value = Path(index.get("embedding_cache_path", raw.get("embedding_cache_path", DEFAULT_EMBEDDING_CACHE_PATH))).expanduser()
-    embedding_cache_path = (
-        embedding_cache_value
-        if embedding_cache_value.is_absolute()
-        else resolved_root / embedding_cache_value
-    )
+    embedding_cache_path = runtime.embedding_cache_path
     collections = index.get("collections", {})
     default_collection = str(collections.get("default", raw.get("collection_name", DEFAULT_COLLECTION)))
 
@@ -125,5 +135,6 @@ def load_config(vault_root: str | Path, config_path: str | Path | None = None) -
         collection_name=collection_name,
         embedding_model=embedding_model,
         embedding_cache_path=embedding_cache_path,
+        manifest_path=runtime.manifest_path,
         sources=sources,
     )

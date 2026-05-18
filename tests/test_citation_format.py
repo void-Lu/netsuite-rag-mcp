@@ -11,6 +11,42 @@ from netsuite_rag_mcp.vector_store import ChromaVectorStore, FakeEmbedder
 # ── Unit tests for _format_citation ──────────────────────────────────────────
 
 
+def _write_sources_config(vault: Path) -> None:
+    (vault / "rag").mkdir(parents=True, exist_ok=True)
+    (vault / "rag" / "sources.yaml").write_text(
+        "\n".join(
+            [
+                "schema_version: 2",
+                "workspace_root: .",
+                "index:",
+                "  embedding_model: fake",
+                "  collections:",
+                "    default: test_citation",
+                "sources:",
+                "  - source_name: obsidian",
+                "    source_kind: note",
+                "    root: .",
+                "    include: [projects]",
+                "    exclude: [.git, .obsidian]",
+                "    file_types: [md]",
+                "    parser: markdown_frontmatter_h2",
+                "    collection: test_citation",
+                "    authority: curated_note_source",
+                "  - source_name: netsuite_repo",
+                "    source_kind: code",
+                "    root: .",
+                "    include: [src]",
+                "    exclude: [.git, node_modules]",
+                "    file_types: [js]",
+                "    parser: suitescript_code_and_config",
+                "    collection: test_citation",
+                "    authority: curated_code_source",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+
 def test_format_note_citation_all_fields():
     """Note citation includes source_kind, path, heading, chunk_index, updated_at."""
     citation = {
@@ -94,6 +130,7 @@ def test_format_code_citation_missing_optional_fields():
 
 def _make_store_with_note_and_code(tmp_path: Path) -> ChromaVectorStore:
     """Create a store with both note and code chunks for integration testing."""
+    _write_sources_config(tmp_path)
     store = ChromaVectorStore(tmp_path / "chroma", "test_citation", FakeEmbedder())
 
     note_chunk = Chunk(
@@ -326,6 +363,7 @@ def test_ask_netsuite_rag_backward_compat_source_path_exists(tmp_path: Path):
 
 def test_ask_netsuite_rag_defaults_source_kind_to_note(tmp_path: Path):
     """When source_kind is empty string (from ChromaDB default), default to 'note'."""
+    _write_sources_config(tmp_path)
     store = ChromaVectorStore(tmp_path / "chroma2", "test_citation_default", FakeEmbedder())
     old_style_chunk = Chunk(
         id="old_doc:0",

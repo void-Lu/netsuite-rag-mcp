@@ -588,3 +588,70 @@ def test_no_sensitive_body_returns_zero_redactions(vault: Path):
     assert frontmatter["type"] == "requirement"
     assert result["redacted_count"] == 0
     assert "普通需求说明" in body
+
+
+def test_save_note_uses_global_config_without_cwd_fallback(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
+    from netsuite_rag_mcp.runtime_config import write_global_config
+
+    configured_vault = tmp_path / "configured-vault"
+    configured_vault.mkdir()
+    for domain in (
+        "common-errors",
+        "integration-patterns",
+        "netsuite-object-playbooks",
+        "suitescript-patterns",
+    ):
+        (configured_vault / "knowledge" / domain).mkdir(parents=True)
+
+    cwd_vault = tmp_path / "cwd-vault"
+    cwd_vault.mkdir()
+    monkeypatch.chdir(cwd_vault)
+    monkeypatch.delenv("NETSUITE_RAG_VAULT_ROOT", raising=False)
+    monkeypatch.setenv("NETSUITE_RAG_CONFIG_DIR", str(tmp_path / "config"))
+    monkeypatch.setenv("NETSUITE_RAG_USER_DATA_DIR", str(tmp_path / "user-data"))
+    write_global_config(
+        tmp_path / "config" / "config.yaml",
+        vault_name="homework",
+        vault_root=configured_vault,
+        make_default=True,
+    )
+
+    result = save_obsidian_note(
+        note_type="knowledge",
+        title="Runtime Config Note",
+        content="Body",
+        domain="common-errors",
+        auto_index=False,
+    )
+
+    assert result["ok"] is True
+    assert Path(str(result["absolute_path"])).is_relative_to(configured_vault.resolve())
+    assert not (cwd_vault / "knowledge").exists()
+
+
+def test_save_note_missing_config_does_not_use_cwd(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
+    cwd_vault = tmp_path / "cwd-vault"
+    cwd_vault.mkdir()
+    (cwd_vault / "rag").mkdir()
+    (cwd_vault / "rag" / "sources.yaml").write_text(
+        "schema_version: 2\nworkspace_root: .\nsources: []\n",
+        encoding="utf-8",
+    )
+    monkeypatch.chdir(cwd_vault)
+    monkeypatch.delenv("NETSUITE_RAG_VAULT_ROOT", raising=False)
+    monkeypatch.setenv("NETSUITE_RAG_CONFIG_DIR", str(tmp_path / "empty-config"))
+    monkeypatch.setenv("NETSUITE_RAG_USER_DATA_DIR", str(tmp_path / "user-data"))
+
+    result = save_obsidian_note(
+        note_type="knowledge",
+        title="Should Not Save To Cwd",
+        content="Body",
+        domain="common-errors",
+        auto_index=False,
+    )
+
+    assert result["ok"] is False
+    assert result["code"] == "missing_vault_root"
+    assert "netsuite-rag-mcp init --vault" in str(result["error"])
+    assert "NETSUITE_RAG_VAULT_ROOT" in str(result["error"])
+    assert not (cwd_vault / "knowledge").exists()

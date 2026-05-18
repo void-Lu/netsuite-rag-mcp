@@ -15,7 +15,9 @@ from netsuite_rag_mcp.indexer import (
     index_sources,
     index_vault,
 )
+from netsuite_rag_mcp.manifest import ManifestEntry, read_manifest, write_manifest
 from netsuite_rag_mcp.models import RagConfig, SourceConfig
+from netsuite_rag_mcp.runtime_config import resolve_runtime_config
 from netsuite_rag_mcp.vector_store import ChromaVectorStore, FakeEmbedder
 
 
@@ -106,6 +108,10 @@ def _collection_count(vault: Path) -> int:
         config.chroma_path, config.collection_name, FakeEmbedder()
     )
     return vector_store.count()
+
+
+def _manifest_path(vault: Path) -> Path:
+    return load_config(vault).manifest_path
 
 
 NOTE_CONTENT = """---
@@ -332,6 +338,26 @@ class TestIndexAll:
         assert "obsidian" in result["sources"]
         assert result["sources"]["obsidian"]["indexed"] >= 1
 
+    def test_index_all_writes_manifest_to_runtime_path_not_vault_local(self, tmp_path: Path):
+        vault = tmp_path / "vault"
+        data_root = tmp_path / "runtime-data"
+        vault.mkdir()
+        _write_v2_config(vault)
+        _write_note(vault, "projects/test-note.md", NOTE_CONTENT)
+
+        runtime = resolve_runtime_config(vault_root_arg=vault, data_root=data_root)
+        config = load_config(vault, runtime_config=runtime)
+        legacy_manifest_path = vault / ".rag-index" / "index-manifest.json"
+
+        result = index_all(vault, mode="full", config=config, embedder=FakeEmbedder())
+
+        assert result["total_indexed"] >= 1
+        assert config.manifest_path == runtime.manifest_path
+        assert runtime.manifest_path.exists()
+        assert not legacy_manifest_path.exists()
+        manifest = read_manifest(runtime.manifest_path)
+        assert "obsidian:note:projects/test-note.md" in manifest
+
 
 # ── Tests: index_sources ──────────────────────────────────────────────────────
 
@@ -353,6 +379,49 @@ class TestIndexSources:
         # netsuite_repo should not be in the results since it wasn't selected
         assert "netsuite_repo" not in result["sources"]
         assert result["sources"]["obsidian"]["indexed"] >= 1
+
+    def test_index_sources_filtered_full_writes_manifest_to_runtime_path_not_vault_local(self, tmp_path: Path):
+        vault = tmp_path / "vault"
+        data_root = tmp_path / "runtime-data"
+        vault.mkdir()
+        _write_v2_config(vault)
+        _write_note(vault, "projects/test-note.md", NOTE_CONTENT)
+
+        runtime = resolve_runtime_config(vault_root_arg=vault, data_root=data_root)
+        config = load_config(vault, runtime_config=runtime)
+        legacy_manifest_path = vault / ".rag-index" / "index-manifest.json"
+        code_key = "netsuite_repo:code:projects/existing-script.js"
+        write_manifest(
+            runtime.manifest_path,
+            {
+                code_key: ManifestEntry(
+                    doc_id="netsuite_repo:projects/existing-script.js",
+                    source_name="netsuite_repo",
+                    source_kind="code",
+                    relative_path="projects/existing-script.js",
+                    mtime=1.0,
+                    size=10,
+                    file_hash="0" * 64,
+                    chunk_count=1,
+                    indexed_at="2026-05-18T00:00:00+00:00",
+                )
+            },
+        )
+
+        result = index_sources(
+            vault,
+            source_names=["obsidian"],
+            mode="full",
+            config=config,
+            embedder=FakeEmbedder(),
+        )
+
+        assert set(result["sources"]) == {"obsidian"}
+        assert runtime.manifest_path.exists()
+        assert not legacy_manifest_path.exists()
+        manifest = read_manifest(runtime.manifest_path)
+        assert code_key in manifest
+        assert "obsidian:note:projects/test-note.md" in manifest
 
     def test_index_sources_by_kind(self, tmp_path: Path):
         vault = tmp_path / "vault"
@@ -428,9 +497,7 @@ class TestIndexSources:
 
         index_all(vault, mode="full", embedder=FakeEmbedder())
 
-        from netsuite_rag_mcp.manifest import read_manifest
-
-        manifest_path = vault / ".rag-index" / "index-manifest.json"
+        manifest_path = _manifest_path(vault)
         initial_manifest = read_manifest(manifest_path)
         initial_count = _collection_count(vault)
         code_keys = {
@@ -456,9 +523,7 @@ class TestIndexSources:
 
         index_all(vault, mode="full", embedder=FakeEmbedder())
 
-        from netsuite_rag_mcp.manifest import read_manifest
-
-        manifest_path = vault / ".rag-index" / "index-manifest.json"
+        manifest_path = _manifest_path(vault)
         initial_manifest = read_manifest(manifest_path)
         initial_count = _collection_count(vault)
         note_keys = {
@@ -484,9 +549,7 @@ class TestIndexSources:
 
         index_all(vault, mode="full", embedder=FakeEmbedder())
 
-        from netsuite_rag_mcp.manifest import read_manifest
-
-        manifest_path = vault / ".rag-index" / "index-manifest.json"
+        manifest_path = _manifest_path(vault)
         initial_manifest = read_manifest(manifest_path)
         initial_count = _collection_count(vault)
 
@@ -509,9 +572,7 @@ class TestIndexSources:
 
         index_all(vault, mode="full", embedder=FakeEmbedder())
 
-        from netsuite_rag_mcp.manifest import read_manifest
-
-        manifest_path = vault / ".rag-index" / "index-manifest.json"
+        manifest_path = _manifest_path(vault)
         initial_manifest = read_manifest(manifest_path)
         deleted_key = "obsidian:note:projects/deleted-note.md"
         kept_note_key = "obsidian:note:knowledge/kept-note.md"
@@ -654,9 +715,7 @@ class TestManifestKeyFormat:
 
         index_all(vault, mode="full", embedder=FakeEmbedder())
 
-        from netsuite_rag_mcp.manifest import read_manifest
-
-        manifest_path = vault / ".rag-index" / "index-manifest.json"
+        manifest_path = _manifest_path(vault)
         manifest = read_manifest(manifest_path)
 
         # Keys should be in v2 format: {source_name}:{source_kind}:{relative_path}
@@ -677,9 +736,7 @@ class TestManifestKeyFormat:
 
         index_all(vault, mode="full", embedder=FakeEmbedder())
 
-        from netsuite_rag_mcp.manifest import read_manifest
-
-        manifest_path = vault / ".rag-index" / "index-manifest.json"
+        manifest_path = _manifest_path(vault)
         manifest = read_manifest(manifest_path)
 
         js_key = None

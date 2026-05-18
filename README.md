@@ -33,28 +33,26 @@
 - **Git**
 - **VS Code** + Copilot 扩展
 
-### 步骤 1：克隆并安装
+### 步骤 1：克隆并安装到全局 MCP 使用的 Python
 
 ```powershell
 # 克隆仓库
 git clone https://github.com/void-Lu/netsuite-rag-mcp.git
 cd netsuite-rag-mcp
 
-# 创建虚拟环境
-python -m venv .venv
-
-# 激活虚拟环境
-# Windows PowerShell:
-.\.venv\Scripts\Activate.ps1
-# Linux/macOS:
-# source .venv/bin/activate
-
-# 安装依赖（国内用户可加 -i https://pypi.tuna.tsinghua.edu.cn/simple 加速）
-pip install -e ".[dev]"
-
-# 预下载 BGE-M3 embedding 模型到本地 .models/ 目录
-netsuite-rag-mcp-preload-model
+# 安装到后续 user-level mcp.json 中 command 使用的同一个解释器
+C:\Python314\python.exe -m pip install -e ".[dev]"
 ```
+
+> 如果你的 Python 路径不是 `C:\Python314\python.exe`，请同时替换上面的安装命令和后续 `mcp.json` 的 `command`。关键点是：VS Code user-level MCP config 中启动 server 的解释器，必须已经安装了 `netsuite-rag-mcp`。
+
+虚拟环境适合本仓库开发和运行测试；全局 MCP 配置不要指向工作区变量或项目 `.venv`，也不要依赖只安装在项目 `.venv` 里的包。
+
+安装后会暴露 3 个控制台命令：
+
+- `netsuite-rag-mcp` — 初始化、状态诊断和默认 MCP 启动入口。
+- `netsuite-rag-mcp-server` — 显式启动 MCP stdio server。
+- `netsuite-rag-mcp-preload-model` — 预下载 embedding 模型到用户本地缓存。
 
 ### 步骤 2：配置数据源
 
@@ -65,9 +63,7 @@ schema_version: 2
 workspace_root: .
 
 index:
-  chroma_path: .rag-index/chroma
   embedding_model: BAAI/bge-m3
-  embedding_cache_path: .models
   collections:
     default: netsuite_knowledge
 
@@ -112,32 +108,70 @@ sources:
 
 > 💡 旧的 v1 扁平格式配置会自动迁移到 v2 格式，无需手动修改。
 
-### 步骤 3：配置 VS Code MCP
+### 步骤 3：初始化全局 MCP 配置
 
-将 `.vscode/mcp.json` 中的路径改为你的实际路径，或直接将以下配置添加到你 VS Code 工作区的 `.vscode/mcp.json`：
+### Global MCP setup summary
+
+- Vault keeps human-authored notes + `rag/sources.yaml`（Vault keeps human content + `rag/sources.yaml`）。
+- Generated state lives in user-local storage.
+- No old `.rag-index`/`.models` compatibility is implemented for the generated-state layout.
+- Use VS Code user-level MCP config, not workspace `.vscode/mcp.json`.
+- global mcp.json does not hardcode vault path.
+
+先在本机运行一次初始化命令，把 Obsidian Vault 的绝对路径写入用户级配置文件：
+
+```powershell
+netsuite-rag-mcp init --vault homework --root "D:\Obsidian Vault\homework" --default
+netsuite-rag-mcp status
+
+# 可选：初始化 vault 配置后，预下载 BGE-M3 embedding 模型到用户本地模型缓存
+netsuite-rag-mcp-preload-model
+```
+
+`netsuite-rag-mcp status` 会打印当前解析到的 vault、`rag/sources.yaml` 是否存在，以及 Chroma、manifest、model cache 的用户本地路径。
+
+Windows 默认生成状态位于用户本地应用数据目录，例如：
+
+```text
+%LOCALAPPDATA%\netsuite-rag-mcp\
+  vaults\
+    homework-1a2b3c4d5e\
+      chroma\
+      index-manifest.json
+  models\
+```
+
+其中：
+
+- Chroma 向量库：`%LOCALAPPDATA%\netsuite-rag-mcp\vaults\<vault-id>\chroma\`
+- 索引 manifest：`%LOCALAPPDATA%\netsuite-rag-mcp\vaults\<vault-id>\index-manifest.json`
+- embedding 模型缓存：`%LOCALAPPDATA%\netsuite-rag-mcp\models\`
+
+旧的 vault-local `.rag-index` 和 `.models` 目录对新布局来说是 obsolete/not used；新索引不会把 Chroma、manifest 或模型缓存写进 Vault。
+
+### 步骤 4：配置 VS Code 用户级 MCP
+
+使用 VS Code user-level MCP config 启动已安装的 server。这个全局 `mcp.json` 只负责启动服务，Vault 路径来自上一步写入的用户级配置：
 
 ```json
 {
   "servers": {
     "netsuite-obsidian-rag": {
       "type": "stdio",
-      "command": "<你的项目路径>\\.venv\\Scripts\\python.exe",
-      "args": ["-m", "netsuite_rag_mcp.server"],
-      "env": {
-        "NETSUITE_RAG_VAULT_ROOT": "<你的Obsidian Vault路径>"
-      }
+      "command": "C:\\Python314\\python.exe",
+      "args": ["-m", "netsuite_rag_mcp.server"]
     }
   }
 }
 ```
 
-> 💡 如果你在项目目录下打开 VS Code，可以使用 `${workspaceFolder}` 代替路径。
+也可以在终端或 MCP 客户端中使用 `netsuite-rag-mcp-server` 作为显式 server 入口；上面的 Python module 写法在 Windows 上更容易表达固定解释器路径。
 
-### 步骤 4：重新加载 VS Code
+### 步骤 5：重新加载 VS Code
 
 按 `Ctrl+Shift+P` → 输入 `Developer: Reload Window` → 回车。
 
-### 步骤 5：建立索引
+### 步骤 6：建立索引
 
 在 Copilot Chat 中输入：
 
@@ -153,7 +187,7 @@ sources:
 请调用 index_sources，source_kind 设为 "code"
 ```
 
-### 步骤 6：开始提问
+### 步骤 7：开始提问
 
 ```text
 请调用 ask_netsuite_rag，question 设为 "这个 Restlet 的用途是什么？"
@@ -228,8 +262,6 @@ pytest
 
 ```text
 .
-├── .vscode/
-│   └── mcp.json                          # MCP 服务器配置模板
 ├── rag/
 │   └── sources.yaml                       # 数据源配置（v2 多源 schema）
 ├── src/netsuite_rag_mcp/
@@ -249,6 +281,9 @@ pytest
 │   ├── manifest.py                        # 索引清单管理（v2 schema + SHA-256 哈希）
 │   ├── git_utils.py                       # Git commit/dirty 提取
 │   ├── retriever.py                       # 检索器 + 路由 + 冲突检测 + 问答上下文组装
+│   ├── cli.py                             # init/status/server 全局配置 CLI
+│   ├── platform_paths.py                  # 用户级 config/data 目录解析
+│   ├── runtime_config.py                  # Vault 与用户本地存储解析
 │   └── preload.py                         # BGE-M3 embedding 模型预下载入口
 ├── templates/                              # Obsidian 笔记模板
 │   ├── scripts/                            # 脚本模板（按脚本类型）
@@ -281,7 +316,7 @@ pytest
 
 ### Q: 首次运行 `index_vault` 很慢？
 
-A: 首次运行时会自动下载 `BAAI/bge-m3` 模型。建议安装依赖后先运行 `netsuite-rag-mcp-preload-model`，模型会缓存到 `.models/`，后续运行直接使用本地缓存。
+A: 首次运行时会自动下载 `BAAI/bge-m3` 模型。建议先运行 `netsuite-rag-mcp init ... --default` 写入 vault 配置，再运行 `netsuite-rag-mcp-preload-model`；模型会缓存到用户本地数据目录（Windows 默认 `%LOCALAPPDATA%\netsuite-rag-mcp\models\`），后续运行直接使用本地缓存。
 
 ### Q: 需要配置 API Key 吗？
 

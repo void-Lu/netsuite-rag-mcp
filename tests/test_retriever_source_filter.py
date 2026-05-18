@@ -8,8 +8,45 @@ from netsuite_rag_mcp.retriever import _build_where_clause, ask_netsuite_rag, se
 from netsuite_rag_mcp.vector_store import ChromaVectorStore, FakeEmbedder
 
 
+def _write_sources_config(vault: Path) -> None:
+    (vault / "rag").mkdir(parents=True, exist_ok=True)
+    (vault / "rag" / "sources.yaml").write_text(
+        "\n".join(
+            [
+                "schema_version: 2",
+                "workspace_root: .",
+                "index:",
+                "  embedding_model: fake",
+                "  collections:",
+                "    default: test_source_filter",
+                "sources:",
+                "  - source_name: obsidian",
+                "    source_kind: note",
+                "    root: .",
+                "    include: [projects]",
+                "    exclude: [.git, .obsidian]",
+                "    file_types: [md]",
+                "    parser: markdown_frontmatter_h2",
+                "    collection: test_source_filter",
+                "    authority: curated_note_source",
+                "  - source_name: netsuite_repo",
+                "    source_kind: code",
+                "    root: .",
+                "    include: [src]",
+                "    exclude: [.git, node_modules]",
+                "    file_types: [js]",
+                "    parser: suitescript_code_and_config",
+                "    collection: test_source_filter",
+                "    authority: curated_code_source",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+
 def _setup_store_with_mixed_sources(tmp_path: Path) -> ChromaVectorStore:
     """Create a vector store with chunks from different source kinds/names."""
+    _write_sources_config(tmp_path)
     store = ChromaVectorStore(tmp_path / "chroma", "test_source_filter", FakeEmbedder())
 
     note_chunk = Chunk(

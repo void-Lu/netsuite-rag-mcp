@@ -19,8 +19,6 @@ from netsuite_rag_mcp.parser import parse_code_file, parse_markdown_file
 from netsuite_rag_mcp.parser_xml_json import parse_json_config, parse_xml_file
 from netsuite_rag_mcp.vector_store import ChromaVectorStore, Embedder, SentenceTransformerEmbedder
 
-MANIFEST_PATH = ".rag-index/index-manifest.json"
-
 # ── Parser/chunker routing table ─────────────────────────────────────────────
 # Maps (parser_name, file_extension) → (parse_func_name, chunk_func_name)
 _ROUTE_TABLE: dict[tuple[str, str], tuple[str, str]] = {
@@ -360,7 +358,7 @@ def index_all(
     )
 
     # Initialize manifest
-    manifest_path = vault_root / MANIFEST_PATH
+    manifest_path = config.manifest_path
     manifest: dict[str, ManifestEntry] = {}
 
     # Handle full vs incremental mode
@@ -449,7 +447,7 @@ def index_sources(
         vector_store = ChromaVectorStore(
             config.chroma_path, config.collection_name, selected_embedder
         )
-        manifest_path = vault_root / MANIFEST_PATH
+        manifest_path = config.manifest_path
         manifest = read_manifest(manifest_path)
 
         sources_stats: dict[str, dict[str, Any]] = {}
@@ -485,6 +483,7 @@ def index_sources(
         collection_name=config.collection_name,
         embedding_model=config.embedding_model,
         embedding_cache_path=config.embedding_cache_path,
+        manifest_path=config.manifest_path,
         sources=filtered_sources,
     )
 

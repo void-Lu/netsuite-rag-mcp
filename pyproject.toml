@@ -34,7 +34,8 @@ dev = [
 ]
 
 [project.scripts]
-netsuite-rag-mcp = "netsuite_rag_mcp.server:main"
+netsuite-rag-mcp = "netsuite_rag_mcp.cli:main"
+netsuite-rag-mcp-server = "netsuite_rag_mcp.server:main"
 netsuite-rag-mcp-preload-model = "netsuite_rag_mcp.preload:main"
 
 [tool.setuptools.packages.find]

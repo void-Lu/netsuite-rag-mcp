@@ -29,6 +29,7 @@ class RagConfig:
     collection_name: str
     embedding_model: str
     embedding_cache_path: Path
+    manifest_path: Path
     sources: list[SourceConfig] = field(default_factory=list)
 
 

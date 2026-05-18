@@ -20,9 +20,8 @@ env/
 # Local embedding model cache (preloaded/regenerated locally)
 .models/
 
-# IDE (keep .vscode/mcp.json as template)
-.vscode/*
-!.vscode/mcp.json
+# IDE (workspace-local config)
+.vscode/
 .idea/
 *.swp
 *.swo

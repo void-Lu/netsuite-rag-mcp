@@ -3,7 +3,10 @@ from __future__ import annotations
 from pathlib import Path
 
 from netsuite_rag_mcp.indexer import index_vault
+from netsuite_rag_mcp.manifest import read_manifest
 from netsuite_rag_mcp.models import Chunk
+from netsuite_rag_mcp.retriever import search_netsuite_knowledge
+from netsuite_rag_mcp.runtime_config import resolve_runtime_config
 from netsuite_rag_mcp.vector_store import ChromaVectorStore, FakeEmbedder, SentenceTransformerEmbedder
 
 
@@ -120,8 +123,50 @@ status: active
     )
 
     result = index_vault(vault, mode="full", embedder=FakeEmbedder())
+    runtime = resolve_runtime_config(vault_root_arg=vault, data_root=tmp_path / "user-data")
 
     assert result["indexed_files"] == 1
     assert result["indexed_chunks"] >= 1
     assert result["mode"] == "full"
     assert result["collection_count"] >= 1
+    assert len(read_manifest(runtime.manifest_path)) == 1
+    assert runtime.chroma_path.exists()
+    assert not (vault / ".rag-index").exists()
+    assert not (vault / ".models").exists()
+
+
+def test_search_uses_runtime_embedding_cache_for_default_embedder(monkeypatch, tmp_path: Path):
+    vault = tmp_path / "vault"
+    data_root = tmp_path / "user-data"
+    vault.mkdir()
+    write_sources_config(vault)
+    monkeypatch.setenv("NETSUITE_RAG_USER_DATA_DIR", str(data_root))
+    runtime = resolve_runtime_config(vault_root_arg=vault, data_root=data_root)
+    calls = {}
+
+    class StubEmbedder:
+        def __init__(self, model_name: str, cache_folder: Path):
+            calls["model_name"] = model_name
+            calls["cache_folder"] = cache_folder
+
+        def embed(self, texts: list[str]) -> list[list[float]]:
+            return [[0.0, 0.0, 0.0, 0.0] for _ in texts]
+
+    class StubStore:
+        def __init__(self, persist_path: Path, collection_name: str, embedder: StubEmbedder):
+            calls["persist_path"] = persist_path
+            calls["collection_name"] = collection_name
+            calls["store_embedder"] = embedder
+
+        def query(self, query_text: str, n_results: int = 5, where=None):
+            return []
+
+    monkeypatch.setattr("netsuite_rag_mcp.retriever.SentenceTransformerEmbedder", StubEmbedder)
+    monkeypatch.setattr("netsuite_rag_mcp.retriever.ChromaVectorStore", StubStore)
+
+    result = search_netsuite_knowledge(vault, "订单同步")
+
+    assert result["results"] == []
+    assert calls["model_name"] == "fake"
+    assert calls["cache_folder"] == runtime.embedding_cache_path
+    assert calls["persist_path"] == runtime.chroma_path
