@@ -76,8 +76,25 @@ def _run_init(args: argparse.Namespace) -> int:
 
 
 def _run_status(args: argparse.Namespace) -> int:
-    runtime = resolve_runtime_config(vault_root_arg=args.root)
-    _print_json(_runtime_payload(runtime))
+    runtime = resolve_runtime_config(vault_root_arg=args.root, require_sources_config=False)
+    payload = _runtime_payload(runtime)
+    if not runtime.sources_config_path.exists():
+        payload.update(
+            {
+                "ok": False,
+                "code": "missing_sources_config",
+                "error": (
+                    f"Vault root {runtime.vault_root} does not contain rag/sources.yaml. "
+                    f"Create {runtime.sources_config_path} before indexing, or run "
+                    "`netsuite-rag-mcp init --vault <name> --root <vault-path> --default` "
+                    "after creating it."
+                ),
+            }
+        )
+        _print_json(payload)
+        return 2
+
+    _print_json(payload)
     return 0
 
 

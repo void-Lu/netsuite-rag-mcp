@@ -69,6 +69,47 @@ def test_status_reads_same_global_config(monkeypatch: pytest.MonkeyPatch, tmp_pa
     assert output["sources_config_exists"] is True
 
 
+def test_status_reports_full_diagnostics_when_sources_config_is_missing(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+):
+    vault = tmp_path / "Homework Vault"
+    vault.mkdir()
+    config_dir = tmp_path / "config"
+    data_root = tmp_path / "user-data"
+    monkeypatch.delenv("NETSUITE_RAG_VAULT_ROOT", raising=False)
+    monkeypatch.setenv("NETSUITE_RAG_CONFIG_DIR", str(config_dir))
+    monkeypatch.setenv("NETSUITE_RAG_USER_DATA_DIR", str(data_root))
+
+    assert main(["init", "--vault", "homework", "--root", str(vault), "--default"]) == 0
+    init_output = json.loads(capsys.readouterr().out)
+    assert init_output["sources_config_exists"] is False
+    assert not (vault / "rag" / "sources.yaml").exists()
+
+    exit_code = main(["status"])
+
+    assert exit_code != 0
+    output = json.loads(capsys.readouterr().out)
+    assert output["ok"] is False
+    assert output["code"] == "missing_sources_config"
+    assert "rag/sources.yaml" in output["error"]
+    assert output["vault_root"] == str(vault.resolve())
+    assert output["resolution_source"] == "global_config"
+    assert output["config_path"] == str((config_dir / "config.yaml").resolve())
+    assert output["global_config_path"] == str((config_dir / "config.yaml").resolve())
+    assert output["data_root"] == str(data_root.resolve())
+    assert output["user_data_root"] == str(data_root.resolve())
+    assert output["vault_data_root"].startswith(str((data_root / "vaults").resolve()))
+    assert output["vault_storage_dir"] == output["vault_data_root"]
+    assert output["chroma_path"].endswith("chroma")
+    assert output["manifest_path"].endswith("index-manifest.json")
+    assert output["embedding_cache_path"] == str((data_root / "models").resolve())
+    assert output["model_cache_path"] == str((data_root / "models").resolve())
+    assert output["sources_config_path"] == str((vault / "rag" / "sources.yaml").resolve())
+    assert output["sources_config_exists"] is False
+
+
 def test_status_returns_nonzero_with_actionable_message_when_config_missing(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
