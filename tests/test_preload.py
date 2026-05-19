@@ -6,6 +6,7 @@ from netsuite_rag_mcp.runtime_config import resolve_runtime_config
 
 def test_preload_embedding_model_uses_configured_model_and_cache(monkeypatch, tmp_path: Path):
     vault = tmp_path / "vault"
+    data_root = tmp_path / "user-data"
     vault.mkdir()
     (vault / "rag").mkdir()
     (vault / "rag" / "sources.yaml").write_text(
@@ -26,6 +27,7 @@ def test_preload_embedding_model_uses_configured_model_and_cache(monkeypatch, tm
             calls["cache_folder"] = cache_folder
 
     monkeypatch.setattr("netsuite_rag_mcp.preload.SentenceTransformerEmbedder", StubEmbedder)
+    monkeypatch.setenv("NETSUITE_RAG_USER_DATA_DIR", str(data_root))
 
     result = preload_embedding_model(vault)
     runtime = resolve_runtime_config(vault_root_arg=vault)

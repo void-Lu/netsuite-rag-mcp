@@ -2,7 +2,7 @@
 
 **Date:** 2026-05-18  
 **Plan ID:** `20260518-global-rag-mcp-storage`  
-**Status:** Draft for user review
+**Status:** Implemented design baseline
 
 ## Objective
 
@@ -32,8 +32,8 @@ The root cause is that runtime state, source configuration, and development work
 Use three separate roots:
 
 1. **Global install root**
-   - The installed Python package and MCP entry point.
-   - Example command: `python -m netsuite_rag_mcp.server` or a future console script.
+  - The installed Python package and MCP entry point.
+  - Example command: `python -m netsuite_rag_mcp.server` or the `netsuite-rag-mcp-server` console script.
 
 2. **Human vault root**
    - The Obsidian vault.
@@ -76,7 +76,7 @@ Conceptual Windows example:
 }
 ```
 
-The exact command can later become a console script after packaging is finalized.
+The package also exposes `netsuite-rag-mcp-server` for clients that prefer an explicit server console script.
 
 ### Runtime Vault Resolution
 
@@ -197,7 +197,7 @@ The init command should:
 2. Register the named vault root.
 3. Mark it as the default vault when requested.
 4. Check whether `rag/sources.yaml` exists.
-5. Optionally create a starter `rag/sources.yaml` if missing.
+5. Report a missing `rag/sources.yaml` without creating a starter file.
 6. Print the resolved config, vault, and storage paths.
 
 The status command should show:
