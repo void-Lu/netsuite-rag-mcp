@@ -67,7 +67,7 @@ def parse_xml_file(
     # Build paths
     effective_root = repo_root or path.parent
     relative_path = path.resolve().relative_to(effective_root.resolve()).as_posix()
-    doc_id = hashlib.sha1(relative_path.lower().encode("utf-8")).hexdigest()
+    doc_id = hashlib.sha1(f"{source_name}:{relative_path}".lower().encode("utf-8")).hexdigest()
     updated_at = datetime.fromtimestamp(path.stat().st_mtime, tz=timezone.utc).isoformat()
 
     return SourceDocument(
@@ -223,7 +223,7 @@ def parse_json_config(
     # Build paths
     effective_root = repo_root or path.parent
     relative_path = path.resolve().relative_to(effective_root.resolve()).as_posix()
-    doc_id = hashlib.sha1(relative_path.lower().encode("utf-8")).hexdigest()
+    doc_id = hashlib.sha1(f"{source_name}:{relative_path}".lower().encode("utf-8")).hexdigest()
     updated_at = datetime.fromtimestamp(path.stat().st_mtime, tz=timezone.utc).isoformat()
 
     return SourceDocument(

@@ -69,6 +69,10 @@ def _write_note(vault: Path, relative_path: str, content: str) -> Path:
     return path
 
 
+def _manifest_path(vault: Path) -> Path:
+    return _load_config(vault).manifest_path
+
+
 NOTE_CONTENT_A = """---
 type: script
 project: project-a
@@ -169,7 +173,7 @@ class TestHashCheckFalsePositive:
         assert result1["total_indexed"] >= 1
 
         # Read manifest and artificially change mtime to trigger hash check
-        manifest_path = vault / ".rag-index" / "index-manifest.json"
+        manifest_path = _manifest_path(vault)
         manifest = read_manifest(manifest_path)
 
         # Find the key for our file
@@ -209,7 +213,7 @@ class TestHashCheckFalsePositive:
         assert result1["total_indexed"] >= 1
 
         # Read manifest and set wrong size
-        manifest_path = vault / ".rag-index" / "index-manifest.json"
+        manifest_path = _manifest_path(vault)
         manifest = read_manifest(manifest_path)
         keys = [k for k in manifest if "note-a.md" in k]
         key = keys[0]
@@ -293,7 +297,7 @@ class TestChangedFileReindex:
         index_all(vault, mode="full", embedder=FakeEmbedder())
 
         # Get initial manifest
-        manifest_path = vault / ".rag-index" / "index-manifest.json"
+        manifest_path = _manifest_path(vault)
         manifest1 = read_manifest(manifest_path)
         key1 = [k for k in manifest1 if "note-a.md" in k][0]
         hash1 = manifest1[key1].file_hash
@@ -327,7 +331,7 @@ class TestDeletedFileCleanup:
         index_all(vault, mode="full", embedder=FakeEmbedder())
 
         # Verify file is in manifest
-        manifest_path = vault / ".rag-index" / "index-manifest.json"
+        manifest_path = _manifest_path(vault)
         manifest1 = read_manifest(manifest_path)
         keys1 = [k for k in manifest1 if "note-a.md" in k]
         assert len(keys1) == 1
@@ -465,7 +469,7 @@ class TestManifestEntryFields:
 
         index_all(vault, mode="full", embedder=FakeEmbedder())
 
-        manifest_path = vault / ".rag-index" / "index-manifest.json"
+        manifest_path = _manifest_path(vault)
         manifest = read_manifest(manifest_path)
         keys = [k for k in manifest if "note-a.md" in k]
         assert len(keys) == 1
@@ -490,7 +494,7 @@ class TestManifestEntryFields:
 
         index_all(vault, mode="full", embedder=FakeEmbedder())
 
-        manifest_path = vault / ".rag-index" / "index-manifest.json"
+        manifest_path = _manifest_path(vault)
         manifest = read_manifest(manifest_path)
         key = [k for k in manifest if "note-a.md" in k][0]
         entry = manifest[key]
@@ -508,7 +512,7 @@ class TestManifestEntryFields:
         # Full index
         index_all(vault, mode="full", embedder=FakeEmbedder())
 
-        manifest_path = vault / ".rag-index" / "index-manifest.json"
+        manifest_path = _manifest_path(vault)
         manifest = read_manifest(manifest_path)
         key = [k for k in manifest if "note-a.md" in k][0]
 
@@ -554,7 +558,7 @@ class TestBackwardCompatibility:
         index_all(vault, mode="full", embedder=FakeEmbedder())
 
         # Convert v2 manifest back to v1 format (just relative_path keys)
-        manifest_path = vault / ".rag-index" / "index-manifest.json"
+        manifest_path = _manifest_path(vault)
         manifest = read_manifest(manifest_path)
         v1_manifest: dict = {}
         for key, entry in manifest.items():

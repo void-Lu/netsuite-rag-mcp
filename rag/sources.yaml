@@ -2,9 +2,7 @@ schema_version: 2
 workspace_root: .
 
 index:
-  chroma_path: .rag-index/chroma
   embedding_model: BAAI/bge-m3
-  embedding_cache_path: .models
   collections:
     default: netsuite_knowledge
 

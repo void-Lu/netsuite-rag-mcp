@@ -327,6 +327,7 @@ def test_read_manifest_auto_migrates_v1(tmp_path: Path):
 
 def test_index_vault_writes_v2_manifest(tmp_path: Path):
     """index_vault should write a v2 manifest with file_hash, size, source_name, source_kind."""
+    from netsuite_rag_mcp.config import load_config
     from netsuite_rag_mcp.manifest import read_manifest
 
     vault = tmp_path / "vault"
@@ -367,7 +368,7 @@ def test_index_vault_writes_v2_manifest(tmp_path: Path):
     assert result["indexed_files"] == 1
 
     # Read the manifest file directly
-    manifest_path = vault / ".rag-index" / "index-manifest.json"
+    manifest_path = load_config(vault).manifest_path
     entries = read_manifest(manifest_path)
 
     # Should have a v2 key

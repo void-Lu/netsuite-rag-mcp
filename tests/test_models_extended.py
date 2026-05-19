@@ -220,6 +220,7 @@ def test_rag_config_has_sources_field_with_default():
         collection_name="netsuite_notes",
         embedding_model="BAAI/bge-m3",
         embedding_cache_path=Path("/tmp/vault/.models"),
+        manifest_path=Path("/tmp/vault/.rag-index/index-manifest.json"),
     )
 
     assert cfg.sources == []
@@ -246,6 +247,7 @@ def test_rag_config_sources_can_be_populated():
         collection_name="netsuite_notes",
         embedding_model="BAAI/bge-m3",
         embedding_cache_path=Path("/tmp/vault/.models"),
+        manifest_path=Path("/tmp/vault/.rag-index/index-manifest.json"),
         sources=[src],
     )
 

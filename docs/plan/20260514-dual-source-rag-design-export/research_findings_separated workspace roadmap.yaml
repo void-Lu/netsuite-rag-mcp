@@ -1,0 +1,752 @@
+plan_id: "20260514-dual-source-rag-design-export"
+objective: "Produce concise export-ready design material for a separated Obsidian workspace and RAG workspace roadmap."
+focus_area: "separated workspace roadmap"
+created_at: "2026-05-14"
+created_by: "GitHub Copilot researcher"
+status: completed
+tldr: |
+  - The exported design should split ownership into two workstreams: Obsidian workspace for human-authored NetSuite knowledge and RAG workspace for indexing, retrieval, citations, policy, vector storage, and MCP tools.
+  - MVP scope is note-first and local: structured Obsidian directories/templates plus current Markdown indexing, ChromaDB, MCP search/ask tools, citations, answer policy, metadata filters, and redaction.
+  - Dual-source code-repo indexing belongs after the MVP boundary: introduce a typed source registry, source_kind/source_type metadata, repo/code parsers, git freshness, and note/code conflict diagnostics.
+  - Acceptance should verify document completeness, workspace ownership, required metadata/frontmatter, indexed paths, source citations, sensitive-data boundaries, and current RAG tool behavior.
+  - Later enhancements include repo symbol indexing, stale deletion, secret scanning before indexing, evaluations, watchers, UI, team deployment, and optional NetSuite/ZenTao connectors.
+research_metadata:
+  methodology: "semantic_search for workspace/RAG examples; grep_search for roadmap/MVP/source/conflict terms; read_file for original design, existing research YAMLs, README, Index, rag/sources.yaml, templates, Python modules, and tests."
+  scope: "Export-ready design material only; no code implementation and no Markdown document creation."
+  confidence: high
+  coverage: 92
+  decision_blockers: 3
+  research_blockers: 0
+  notes:
+    - "No AGENTS.md, docs/PRD.yaml, or docs/skills/*.skill.md file was found in workspace search."
+    - "Existing plan findings already cover Obsidian workspace optimization, RAG workspace optimization, and dual-source conflict policy; this file consolidates them into separated-workstream roadmap material."
+files_analyzed:
+  - file: "2026-05-13-netsuite-obsidian-rag-design.md"
+    path: "docs/superpowers/specs/2026-05-13-netsuite-obsidian-rag-design.md"
+    purpose: "Original design source for goals, architecture, Vault structure, indexing, answering, MVP boundaries, and component responsibilities."
+    key_elements:
+      - element: "target outcome"
+        type: pattern
+        location: "docs/superpowers/specs/2026-05-13-netsuite-obsidian-rag-design.md:1-21"
+        description: "Defines Obsidian as the knowledge-management entry and local MCP/RAG as the retrieval path for VS Code Copilot."
+        language: markdown
+      - element: "Vault knowledge organization"
+        type: pattern
+        location: "docs/superpowers/specs/2026-05-13-netsuite-obsidian-rag-design.md:48-101"
+        description: "Defines Index, _index, projects, knowledge, templates, and rag responsibilities."
+        language: markdown
+      - element: "RAG indexing and query flow"
+        type: pattern
+        location: "docs/superpowers/specs/2026-05-13-netsuite-obsidian-rag-design.md:189-245"
+        description: "Specifies sources.yaml, Markdown scanning, frontmatter parsing, chunking, Chroma writes, and Copilot-to-MCP answer flow."
+        language: markdown
+      - element: "MVP and component boundaries"
+        type: pattern
+        location: "docs/superpowers/specs/2026-05-13-netsuite-obsidian-rag-design.md:337-430"
+        description: "Lists phase-one inclusions/exclusions and separates templates, indexer, retriever, rag_context_builder, and MCP server."
+        language: markdown
+    lines: 468
+  - file: "research_findings_Obsidian workspace optimization.yaml"
+    path: "docs/plan/20260514-dual-source-rag-design-export/research_findings_Obsidian workspace optimization.yaml"
+    purpose: "Prior research defining Obsidian as the human-knowledge layer and not a code mirror."
+    key_elements:
+      - element: "Obsidian role"
+        type: pattern
+        location: "docs/plan/20260514-dual-source-rag-design-export/research_findings_Obsidian workspace optimization.yaml:7-12"
+        description: "Positions Obsidian around business context, requirements, troubleshooting, decisions, and metadata anchors."
+        language: yaml
+      - element: "export_design_material"
+        type: pattern
+        location: "docs/plan/20260514-dual-source-rag-design-export/research_findings_Obsidian workspace optimization.yaml:454-708"
+        description: "Contains responsibilities, directory structure, template fields, what not to store, workflow rules, risks, and gaps for Obsidian workspace export copy."
+        language: yaml
+    lines: 715
+  - file: "research_findings_RAG 工作区优化.yaml"
+    path: "docs/plan/20260514-dual-source-rag-design-export/research_findings_RAG 工作区优化.yaml"
+    purpose: "Prior research defining RAG workspace optimization and typed dual-source indexing needs."
+    key_elements:
+      - element: "dual-source need"
+        type: pattern
+        location: "docs/plan/20260514-dual-source-rag-design-export/research_findings_RAG 工作区优化.yaml:7-12"
+        description: "Identifies need for a source registry that distinguishes curated notes from authoritative code repos."
+        language: yaml
+      - element: "export_section_material"
+        type: pattern
+        location: "docs/plan/20260514-dual-source-rag-design-export/research_findings_RAG 工作区优化.yaml:438-646"
+        description: "Proposes source registry, metadata model, incremental freshness strategy, MCP filter changes, and RAG risk mitigations."
+        language: yaml
+    lines: 704
+  - file: "research_findings_dual-source retrieval and conflict policy.yaml"
+    path: "docs/plan/20260514-dual-source-rag-design-export/research_findings_dual-source retrieval and conflict policy.yaml"
+    purpose: "Prior research defining note/code retrieval routing, citation format, merge rules, and conflict policy."
+    key_elements:
+      - element: "source authority"
+        type: pattern
+        location: "docs/plan/20260514-dual-source-rag-design-export/research_findings_dual-source retrieval and conflict policy.yaml:7-11"
+        description: "States note authority for business/rationale/troubleshooting and code authority for implementation facts."
+        language: yaml
+      - element: "export_document_material"
+        type: pattern
+        location: "docs/plan/20260514-dual-source-rag-design-export/research_findings_dual-source retrieval and conflict policy.yaml:399-552"
+        description: "Contains query flow, retrieval routing, note/code merge policy, citation format, conflict policy, answer structure, and example."
+        language: yaml
+    lines: 605
+  - file: "README.md"
+    path: "README.md"
+    purpose: "Current user-facing usage summary for the local RAG MCP prototype."
+    key_elements:
+      - element: "MCP usage"
+        type: pattern
+        location: "README.md:4-18"
+        description: "Describes local MCP server setup, index_vault, and ask_netsuite_rag usage with context_blocks, sources, and answer_policy."
+        language: markdown
+    lines: 18
+  - file: "Index.md"
+    path: "Index.md"
+    purpose: "Current Obsidian dashboard template and navigation surface."
+    key_elements:
+      - element: "Vault dashboard"
+        type: pattern
+        location: "Index.md:13-43"
+        description: "Provides directory classification and Dataview listing structure."
+        language: markdown
+      - element: "workspace/project sections"
+        type: pattern
+        location: "Index.md:45-114"
+        description: "Contains project overview, external resources, quick navigation, tasks, and quick notes sections."
+        language: markdown
+    lines: 131
+  - file: "sources.yaml"
+    path: "rag/sources.yaml"
+    purpose: "Current RAG source configuration."
+    key_elements:
+      - element: "include/exclude"
+        type: variable
+        location: "rag/sources.yaml:1-8"
+        description: "Current source config is note-first: vault root includes projects and knowledge and excludes .git, .obsidian, .superpowers, and .rag-index."
+        language: yaml
+      - element: "vector settings"
+        type: variable
+        location: "rag/sources.yaml:9-11"
+        description: "Configures local Chroma path, collection name, and embedding model."
+        language: yaml
+    lines: 11
+  - file: "script-note.md"
+    path: "templates/script-note.md"
+    purpose: "Current SuiteScript note template."
+    key_elements:
+      - element: "frontmatter and sections"
+        type: pattern
+        location: "templates/script-note.md:1-30"
+        description: "Defines script metadata and sections for requirements, purpose, parameters, logic, code snippets, config, related scripts, and troubleshooting."
+        language: markdown
+    lines: 30
+  - file: "object-note.md"
+    path: "templates/object-note.md"
+    purpose: "Current NetSuite object note template."
+    key_elements:
+      - element: "frontmatter and sections"
+        type: pattern
+        location: "templates/object-note.md:1-19"
+        description: "Defines object metadata and sections for requirements, business purpose, filters, results, and usage location."
+        language: markdown
+    lines: 19
+  - file: "requirement-note.md"
+    path: "templates/requirement-note.md"
+    purpose: "Current requirement note template."
+    key_elements:
+      - element: "frontmatter and sections"
+        type: pattern
+        location: "templates/requirement-note.md:1-19"
+        description: "Defines requirement metadata and body sections for ZenTao links, background, acceptance criteria, related scripts, and related objects."
+        language: markdown
+    lines: 19
+  - file: "troubleshooting-note.md"
+    path: "templates/troubleshooting-note.md"
+    purpose: "Current troubleshooting note template."
+    key_elements:
+      - element: "frontmatter and sections"
+        type: pattern
+        location: "templates/troubleshooting-note.md:1-26"
+        description: "Defines troubleshooting metadata and sections for symptom, impact, root cause, solution, related artifacts, and requirement links."
+        language: markdown
+    lines: 26
+  - file: "config.py"
+    path: "src/netsuite_rag_mcp/config.py"
+    purpose: "Loads RAG source configuration into runtime paths/settings."
+    key_elements:
+      - element: "DEFAULT_INCLUDE and load_config"
+        type: function
+        location: "src/netsuite_rag_mcp/config.py:8-42"
+        description: "Defaults to projects/knowledge and resolves include paths, exclude names, Chroma path, collection, and embedding model."
+        language: python
+    lines: 42
+  - file: "indexer.py"
+    path: "src/netsuite_rag_mcp/indexer.py"
+    purpose: "Current Markdown indexing implementation."
+    key_elements:
+      - element: "index_vault"
+        type: function
+        location: "src/netsuite_rag_mcp/indexer.py:21-128"
+        description: "Performs full/incremental indexing, parses/chunks Markdown, replaces old chunks, writes manifest, and returns counts/errors."
+        language: python
+      - element: "_collect_markdown_files"
+        type: function
+        location: "src/netsuite_rag_mcp/indexer.py:134-156"
+        description: "Collects only Markdown files from configured include paths."
+        language: python
+    lines: 180
+  - file: "retriever.py"
+    path: "src/netsuite_rag_mcp/retriever.py"
+    purpose: "Current semantic search and RAG context assembly."
+    key_elements:
+      - element: "search_netsuite_knowledge"
+        type: function
+        location: "src/netsuite_rag_mcp/retriever.py:11-47"
+        description: "Queries Chroma, applies metadata filters, redacts returned text, and assigns Sx citation IDs."
+        language: python
+      - element: "ask_netsuite_rag"
+        type: function
+        location: "src/netsuite_rag_mcp/retriever.py:51-99"
+        description: "Builds context_blocks, sources, answer_policy, diagnostics, and suggested response format."
+        language: python
+    lines: 99
+  - file: "policy.py"
+    path: "src/netsuite_rag_mcp/policy.py"
+    purpose: "Current answer policy returned to Copilot."
+    key_elements:
+      - element: "build_answer_policy"
+        type: function
+        location: "src/netsuite_rag_mcp/policy.py:4-51"
+        description: "Requires faithfulness, citations, explicit conflict handling, answer structure, freshness, security, and diagnostics."
+        language: python
+    lines: 51
+  - file: "server.py"
+    path: "src/netsuite_rag_mcp/server.py"
+    purpose: "Current FastMCP tool surface."
+    key_elements:
+      - element: "_build_filters"
+        type: function
+        location: "src/netsuite_rag_mcp/server.py:89-108"
+        description: "Builds current note-centric filters: project, script_type, related_records, related_script_ids, object_type, and status."
+        language: python
+      - element: "MCP tools"
+        type: function
+        location: "src/netsuite_rag_mcp/server.py:111-154"
+        description: "Exposes index_vault, search_netsuite_knowledge, ask_netsuite_rag, and get_index_status."
+        language: python
+    lines: 154
+  - file: "redaction.py"
+    path: "src/netsuite_rag_mcp/redaction.py"
+    purpose: "Current sensitive-data masking implementation."
+    key_elements:
+      - element: "REDACTION_PATTERNS"
+        type: variable
+        location: "src/netsuite_rag_mcp/redaction.py:5-15"
+        description: "Masks phone, email, ID-card, bank-card, Authorization/Cookie/session IDs, API-like tokens, and password/secret/token/api_key assignments."
+        language: python
+    lines: 22
+  - file: "pyproject.toml"
+    path: "pyproject.toml"
+    purpose: "Python package and dependency declaration."
+    key_elements:
+      - element: "project dependencies"
+        type: variable
+        location: "pyproject.toml:5-24"
+        description: "Declares Python 3.11+, ChromaDB, MCP SDK, PyYAML, sentence-transformers, pytest, and src package layout."
+        language: toml
+    lines: 24
+  - file: "test_indexer_retriever.py"
+    path: "tests/test_indexer_retriever.py"
+    purpose: "Regression tests for vector store, indexing, metadata filters, citations, and RAG context."
+    key_elements:
+      - element: "index/search/ask tests"
+        type: function
+        location: "tests/test_indexer_retriever.py:89-156"
+        description: "Validates full/incremental indexing, metadata-filtered retrieval, S1 citation ID, answer policy, and source path output."
+        language: python
+    lines: 156
+patterns_found:
+  - category: architecture
+    pattern: "Two-layer ownership is already implicit."
+    description: "Design docs make Obsidian the editable knowledge layer and MCP/RAG the controlled indexing/retrieval layer; separated workstreams should make this boundary explicit."
+    examples:
+      - file: "docs/superpowers/specs/2026-05-13-netsuite-obsidian-rag-design.md"
+        location: "docs/superpowers/specs/2026-05-13-netsuite-obsidian-rag-design.md:17-21"
+        snippet: "用 Obsidian 作为知识编辑与沉淀入口 / 用本地向量库保存语义索引 / MCP 调用本地 RAG 工具"
+      - file: "docs/superpowers/specs/2026-05-13-netsuite-obsidian-rag-design.md"
+        location: "docs/superpowers/specs/2026-05-13-netsuite-obsidian-rag-design.md:366-414"
+        snippet: "templates / indexer / retriever / rag_context_builder / mcp_server"
+    prevalence: common
+  - category: structure
+    pattern: "Obsidian workspace is organized around projects, reusable knowledge, templates, navigation, and RAG config."
+    description: "The documented Vault tree and current templates group project context under projects, cross-project knowledge under knowledge, and templates under templates."
+    examples:
+      - file: "docs/superpowers/specs/2026-05-13-netsuite-obsidian-rag-design.md"
+        location: "docs/superpowers/specs/2026-05-13-netsuite-obsidian-rag-design.md:52-92"
+        snippet: "projects / knowledge / templates / rag"
+      - file: "templates/requirement-note.md"
+        location: "templates/requirement-note.md:1-19"
+        snippet: "type: requirement / zentao_urls / 验收标准 / 相关脚本 / 相关 Object"
+    prevalence: common
+  - category: architecture
+    pattern: "Current RAG MVP is Markdown-first and note-centric."
+    description: "sources.yaml includes projects and knowledge; config defaults match those paths; indexer scans *.md and current filters are NetSuite note metadata."
+    examples:
+      - file: "rag/sources.yaml"
+        location: "rag/sources.yaml:1-11"
+        snippet: "include: projects, knowledge / collection_name: netsuite_notes"
+      - file: "src/netsuite_rag_mcp/indexer.py"
+        location: "src/netsuite_rag_mcp/indexer.py:134-156"
+        snippet: "for md_file in include_path.rglob(\"*.md\")"
+      - file: "src/netsuite_rag_mcp/server.py"
+        location: "src/netsuite_rag_mcp/server.py:89-108"
+        snippet: "project, script_type, related_records, related_script_ids, object_type, status"
+    prevalence: common
+  - category: architecture
+    pattern: "Citations and answer policy are the cross-workspace contract."
+    description: "The retriever returns context_blocks/sources/answer_policy; the policy requires citations, conflict handling, answer structure, freshness, and security."
+    examples:
+      - file: "src/netsuite_rag_mcp/retriever.py"
+        location: "src/netsuite_rag_mcp/retriever.py:51-99"
+        snippet: "context_blocks, sources, answer_policy, answer_diagnostics"
+      - file: "src/netsuite_rag_mcp/policy.py"
+        location: "src/netsuite_rag_mcp/policy.py:9-19"
+        snippet: "每个关键事实后必须标注来源 / 冲突点和各自来源"
+    prevalence: common
+  - category: error_handling
+    pattern: "MVP exclusions keep the first release local and bounded."
+    description: "The original MVP explicitly excludes complex UI, automatic NetSuite reads, automatic ZenTao crawling, realtime watchers, team deployment, and a full evaluation platform."
+    examples:
+      - file: "docs/superpowers/specs/2026-05-13-netsuite-obsidian-rag-design.md"
+        location: "docs/superpowers/specs/2026-05-13-netsuite-obsidian-rag-design.md:353-363"
+        snippet: "复杂 Web UI / 自动读取 NetSuite 账号 / 自动登录禅道抓取需求 / 实时文件监听服务 / 团队级部署"
+    prevalence: common
+  - category: security
+    pattern: "Sensitive data handling is a boundary for both workspaces."
+    description: "Notes should not store secrets/PII; RAG redaction and answer policy provide output-side masking and refusal rules."
+    examples:
+      - file: "src/netsuite_rag_mcp/redaction.py"
+        location: "src/netsuite_rag_mcp/redaction.py:5-22"
+        snippet: "REDACTION_PATTERNS / redact_sensitive_text"
+      - file: "src/netsuite_rag_mcp/policy.py"
+        location: "src/netsuite_rag_mcp/policy.py:31-35"
+        snippet: "不输出手机号、身份证号、银行卡号、邮箱、API Key、Token..."
+    prevalence: common
+  - category: testing
+    pattern: "Existing tests verify the current note-first RAG contract."
+    description: "Tests cover config defaults, template presence, parser/chunker behavior, metadata filtering, indexing, citation IDs, source paths, policy returns, and MCP tool wrappers."
+    examples:
+      - file: "tests/test_indexer_retriever.py"
+        location: "tests/test_indexer_retriever.py:89-156"
+        snippet: "index_vault / search_netsuite_knowledge / ask_netsuite_rag"
+      - file: "tests/test_server_tools.py"
+        location: "tests/test_server_tools.py:18-56"
+        snippet: "index_vault_tool uses core indexer"
+    prevalence: common
+related_architecture:
+  components_relevant_to_domain:
+    - component: "Obsidian workspace"
+      responsibility: "Human-authored NetSuite knowledge: project context, requirements, scripts/objects summaries, troubleshooting, decisions, indexes, templates, and metadata anchors."
+      location: "docs/superpowers/specs/2026-05-13-netsuite-obsidian-rag-design.md:48-101; templates/*.md:1"
+      relationship_to_domain: "One follow-up workstream optimizes directory structure, templates, metadata discipline, and note hygiene."
+    - component: "RAG workspace"
+      responsibility: "RAG configuration, Python package, parser/chunker/indexer/retriever/policy/server, local Chroma index, tests, and future typed source registry."
+      location: "rag/sources.yaml:1-11; src/netsuite_rag_mcp/*.py; tests/*.py"
+      relationship_to_domain: "Second follow-up workstream optimizes retrieval, source typing, citations, freshness, redaction, and MCP behavior."
+    - component: "NetSuite code repositories"
+      responsibility: "External source of truth for current implementation facts when dual-source indexing is introduced."
+      location: "docs/plan/20260514-dual-source-rag-design-export/research_findings_RAG 工作区优化.yaml:438-646"
+      relationship_to_domain: "Read-only inputs to the RAG workspace; not bulk-copied into Obsidian notes."
+    - component: "VS Code Copilot"
+      responsibility: "Calls MCP tools and generates final answers from returned context, sources, and answer policy."
+      location: "README.md:14-18; docs/superpowers/specs/2026-05-13-netsuite-obsidian-rag-design.md:226-245"
+      relationship_to_domain: "User-facing entrypoint remains Copilot, not a separate UI in MVP."
+  interfaces_used_by_domain:
+    - interface: "frontmatter metadata"
+      location: "templates/script-note.md:1-11; templates/object-note.md:1-7; templates/requirement-note.md:1-8; templates/troubleshooting-note.md:1-8"
+      usage_pattern: "Human-authored fields become chunk metadata and RAG filters."
+    - interface: "rag/sources.yaml"
+      location: "rag/sources.yaml:1-11; src/netsuite_rag_mcp/config.py:15-42"
+      usage_pattern: "Current source/include/exclude/vector configuration; future home for typed source registry or its compatibility layer."
+    - interface: "MCP tools"
+      location: "src/netsuite_rag_mcp/server.py:111-154"
+      usage_pattern: "Controlled local entrypoints for indexing, search, answer-context assembly, and index status."
+    - interface: "sources list and citation IDs"
+      location: "src/netsuite_rag_mcp/retriever.py:32-78; docs/superpowers/specs/2026-05-13-netsuite-obsidian-rag-design.md:276-281"
+      usage_pattern: "Maps inline [Sx] answer facts back to file path, heading, doc ID, chunk index, and freshness metadata; dual-source export adds source_kind/source_type."
+  data_flow_involving_domain: "Obsidian notes and, later, local code repos are scanned by the RAG workspace -> parsed/chunked with metadata -> embedded into Chroma -> retrieved through MCP filters -> context_blocks/sources/answer_policy are returned to Copilot -> Copilot produces cited answers using note/code authority rules."
+  key_relationships_to_domain:
+    - from: "templates/frontmatter"
+      to: "parser/chunker metadata"
+      relationship: composes
+    - from: "rag/sources.yaml"
+      to: "config.load_config"
+      relationship: imports
+    - from: "indexer.index_vault"
+      to: "parser/chunker/vector_store"
+      relationship: calls
+    - from: "server MCP tools"
+      to: "indexer/retriever core functions"
+      relationship: calls
+    - from: "retriever.ask_netsuite_rag"
+      to: "policy.build_answer_policy"
+      relationship: calls
+related_technology_stack:
+  languages_used_in_domain: ["Markdown", "YAML", "Python", "TOML", "JavaScript/TypeScript later for NetSuite repo indexing"]
+  frameworks_used_in_domain:
+    - name: "FastMCP / MCP Python SDK"
+      usage_in_domain: "Exposes local tools to VS Code Copilot."
+    - name: "pytest"
+      usage_in_domain: "Tests config, templates, parser/chunker, metadata, indexing, retrieval, policy, and tool wrappers."
+  libraries_used_in_domain:
+    - name: "ChromaDB"
+      purpose_in_domain: "Persistent local vector store for indexed knowledge chunks."
+    - name: "sentence-transformers"
+      purpose_in_domain: "Embedding model provider for semantic search."
+    - name: "PyYAML"
+      purpose_in_domain: "Reads rag/sources.yaml and Markdown frontmatter."
+  external_apis_used_in_domain:
+    - name: "VS Code Copilot MCP integration"
+      integration_point: "Copilot calls local MCP tools; final model answer uses returned context/sources/policy."
+related_conventions:
+  naming_patterns_in_domain: "Metadata and tool filters use snake_case fields such as source_path, citation_id, updated_at, script_type, related_records, related_script_ids, object_type, and status; prior dual-source export uses user-facing source_kind while RAG research uses source_type."
+  structure_of_domain: "Obsidian workspace is directory/template/note oriented; RAG workspace is config/package/index/tool oriented; code repos are external implementation sources for future dual-source indexing."
+  error_handling_in_domain: "Indexer records per-file errors without aborting the whole run; server validates mode; answer policy requires conflict listing and uncertainty instead of forced merges."
+  testing_in_domain: "Current tests use pytest and FakeEmbedder to avoid external model calls while checking deterministic indexing/retrieval behavior."
+  documentation_in_domain: "Existing docs define architecture, MVP boundaries, Answer Policy, component boundaries, and export-focused Obsidian/RAG/dual-source material."
+related_dependencies:
+  internal:
+    - component: "templates/*.md"
+      relationship_to_domain: "Provide required fields and body sections for Obsidian workstream and RAG filters."
+      direction: outbound
+    - component: "rag/sources.yaml"
+      relationship_to_domain: "Current contract between Obsidian note locations and RAG indexing."
+      direction: bidirectional
+    - component: "src/netsuite_rag_mcp/indexer.py"
+      relationship_to_domain: "Consumes config and notes; writes local vector index and manifest."
+      direction: outbound
+    - component: "src/netsuite_rag_mcp/retriever.py"
+      relationship_to_domain: "Reads vectors and returns cited, redacted context for Copilot."
+      direction: outbound
+    - component: "src/netsuite_rag_mcp/server.py"
+      relationship_to_domain: "MCP interface for RAG workspace capabilities."
+      direction: inbound
+  external:
+    - name: "Obsidian"
+      purpose_for_domain: "Human note editing, browsing, and plugin-enhanced workspace usage."
+    - name: "VS Code Copilot"
+      purpose_for_domain: "User-facing question/answer interface through MCP tools."
+    - name: "ChromaDB"
+      purpose_for_domain: "Local semantic index storage."
+    - name: "NetSuite code repositories"
+      purpose_for_domain: "Future source-of-truth implementation input for dual-source RAG."
+domain_security_considerations:
+  sensitive_areas:
+    - area: "Obsidian notes"
+      location: "templates/*.md; docs/superpowers/specs/2026-05-13-netsuite-obsidian-rag-design.md:310-315"
+      concern: "Notes can accidentally store credentials, customer PII, or copied logs; design requires not storing secrets/PII and relies on redaction only as a second layer."
+    - area: "RAG retrieval output"
+      location: "src/netsuite_rag_mcp/redaction.py:5-22; src/netsuite_rag_mcp/retriever.py:32-38"
+      concern: "Retrieved text is redacted before return, but pre-index secret scanning is not implemented."
+    - area: "Future code repo indexing"
+      location: "docs/plan/20260514-dual-source-rag-design-export/research_findings_RAG 工作区优化.yaml:631-646"
+      concern: "Local repos may contain secrets, generated artifacts, or large logs; source excludes and secret flagging are later RAG workspace responsibilities."
+  authentication_patterns_in_domain: "No multi-user authentication layer is present in the current local prototype."
+  authorization_patterns_in_domain: "The original MVP excludes multi-user permissions and team deployment."
+  data_validation_in_domain: "Config loading uses YAML-safe loading; frontmatter list fields are normalized; server mode is constrained to full or incremental; current filter values are passed as metadata filters."
+testing_patterns:
+  framework: "pytest"
+  coverage_areas: ["config", "templates", "parser", "chunker", "metadata", "redaction", "policy", "indexing", "retrieval", "MCP tool wrappers"]
+  test_organization: "Unit/regression tests live under tests/ and use FakeEmbedder for deterministic local execution."
+  mock_patterns: ["FakeEmbedder for vector tests", "tmp_path Vault fixtures", "inline sources.yaml and Markdown note fixtures"]
+export_design_material:
+  phased_roadmap:
+    - phase: "0_export_baseline"
+      concise_copy: "Freeze the exported design around two workstreams: Obsidian owns human knowledge structure; RAG owns indexing, retrieval, citations, policy, and MCP behavior."
+      primary_owner: "documentation/export"
+      outputs:
+        - "One ownership matrix for Obsidian workspace vs RAG workspace."
+        - "One MVP boundary list with explicit out-of-scope items."
+        - "One acceptance-criteria checklist for both follow-up workstreams."
+      acceptance:
+        - "Exported document contains roadmap, MVP boundaries, acceptance criteria, later enhancements, and workspace ownership."
+        - "Every roadmap phase states whether it belongs to Obsidian, RAG, or both."
+      source_refs:
+        - "user_request"
+        - "docs/plan/20260514-dual-source-rag-design-export/research_findings_Obsidian workspace optimization.yaml:454-708"
+        - "docs/plan/20260514-dual-source-rag-design-export/research_findings_RAG 工作区优化.yaml:438-646"
+    - phase: "1_obsidian_workspace_foundation"
+      concise_copy: "Optimize the Obsidian directory workspace before expanding RAG: stabilize projects/knowledge/templates/_index, required frontmatter, note placement rules, and no-code-mirror hygiene."
+      primary_owner: "Obsidian workspace"
+      outputs:
+        - "Project directory pattern under projects/<project>/ with overview, requirements, scripts, objects, troubleshooting, and decisions."
+        - "Cross-project knowledge placement under knowledge/."
+        - "Template/frontmatter rules for script, object, requirement, troubleshooting, and decision notes."
+        - "What-not-to-store rules for secrets, PII, bulk code copies, generated artifacts, and scraped source dumps."
+      acceptance:
+        - "Each note type has required metadata fields and stable section headings."
+        - "Implementation details are represented by IDs, paths, links, summaries, and decisions rather than full repository mirrors."
+        - "Retrievable human notes are placed under paths included by the current RAG config, especially projects and knowledge."
+      source_refs:
+        - "docs/superpowers/specs/2026-05-13-netsuite-obsidian-rag-design.md:48-101"
+        - "templates/script-note.md:1-30"
+        - "templates/object-note.md:1-19"
+        - "templates/requirement-note.md:1-19"
+        - "templates/troubleshooting-note.md:1-26"
+    - phase: "2_rag_note_first_mvp"
+      concise_copy: "Keep the RAG workspace MVP note-first and local: index configured Markdown notes, preserve metadata, return citations/sources/policy, apply redaction, and expose only controlled MCP tools."
+      primary_owner: "RAG workspace"
+      outputs:
+        - "Stable rag/sources.yaml config for note indexing."
+        - "Full/incremental Markdown indexing into local ChromaDB."
+        - "Search and ask tools with metadata filters, context_blocks, sources, answer_policy, and diagnostics."
+        - "Regression tests for current config, parsing, chunking, indexing, retrieval, citations, policy, and tool wrappers."
+      acceptance:
+        - "index_vault can index projects/knowledge Markdown and report indexed_files, skipped_files, indexed_chunks, errors, and collection_count."
+        - "ask_netsuite_rag returns context_blocks, sources with source_path/heading/doc_id/chunk_index/updated_at, answer_policy, and requires citations."
+        - "Returned text is redacted before output; the policy instructs the model not to expose secrets/PII."
+      source_refs:
+        - "rag/sources.yaml:1-11"
+        - "src/netsuite_rag_mcp/indexer.py:21-128"
+        - "src/netsuite_rag_mcp/retriever.py:51-99"
+        - "src/netsuite_rag_mcp/redaction.py:5-22"
+        - "tests/test_indexer_retriever.py:89-156"
+    - phase: "3_dual_source_rag_expansion"
+      concise_copy: "After the note-first MVP is stable, extend RAG to read local NetSuite code repos directly through a typed source registry and keep note/code authority visible in every answer."
+      primary_owner: "RAG workspace with Obsidian contract input"
+      outputs:
+        - "Typed source registry for obsidian notes and code repos."
+        - "Metadata additions: source_kind or source_type, authority, source_id, repo_id, language, symbol_name, line_start, line_end, git_commit, and freshness fields."
+        - "Retrieval routing for note-led, code-led, and mixed questions."
+        - "Conflict policy that treats code as authority for implementation facts and notes as authority for business/rationale/troubleshooting unless stale."
+      acceptance:
+        - "Citations expose source_kind/source_type and path so readers can distinguish curated notes from current code."
+        - "Code snippets remain bounded and cited by repo path plus line/symbol coordinates; code is not bulk-copied into Obsidian notes."
+        - "Conflicting note/code claims are listed with source role, path, freshness, and reason instead of silently merged."
+      source_refs:
+        - "docs/plan/20260514-dual-source-rag-design-export/research_findings_RAG 工作区优化.yaml:465-646"
+        - "docs/plan/20260514-dual-source-rag-design-export/research_findings_dual-source retrieval and conflict policy.yaml:399-552"
+    - phase: "4_quality_security_and_scale"
+      concise_copy: "Add reliability and scale features only after the separated workspaces and dual-source contract are stable."
+      primary_owner: "RAG workspace, with Obsidian policy input"
+      outputs:
+        - "Deleted-file purge and per-source freshness/status reporting."
+        - "Pre-index secret scanning or secret-detected flags."
+        - "Evaluation query set for citations, conflicts, no-answer, and redaction."
+        - "Optional watcher, UI, team deployment, and external connectors."
+      acceptance:
+        - "Stale/deleted files do not remain retrievable after incremental refresh."
+        - "Security diagnostics distinguish retrieval redaction from pre-index secret risk."
+        - "Evaluation cases cover source citations, note/code conflicts, freshness, and insufficient-context answers."
+      source_refs:
+        - "docs/superpowers/specs/2026-05-13-netsuite-obsidian-rag-design.md:353-363"
+        - "docs/plan/20260514-dual-source-rag-design-export/research_findings_RAG 工作区优化.yaml:568-646"
+  mvp_boundaries:
+    in_scope:
+      obsidian_workspace:
+        - item: "Directory and note taxonomy for projects, knowledge, templates, _index, and Index.md."
+          source_refs: ["docs/superpowers/specs/2026-05-13-netsuite-obsidian-rag-design.md:52-101"]
+        - item: "Script/object/requirement/troubleshooting templates with frontmatter fields used by RAG filters."
+          source_refs: ["templates/script-note.md:1-30", "templates/object-note.md:1-19", "templates/requirement-note.md:1-19", "templates/troubleshooting-note.md:1-26"]
+        - item: "Manual note hygiene: no secrets/PII, no full code mirrors, code represented through IDs, links, summaries, and decisions."
+          source_refs: ["src/netsuite_rag_mcp/redaction.py:5-22", "docs/plan/20260514-dual-source-rag-design-export/research_findings_Obsidian workspace optimization.yaml:633-655"]
+      rag_workspace:
+        - item: "Markdown/frontmatter indexing for configured note paths."
+          source_refs: ["rag/sources.yaml:1-11", "src/netsuite_rag_mcp/indexer.py:134-156"]
+        - item: "Local ChromaDB storage, embedding model config, and manifest-based full/incremental runs."
+          source_refs: ["src/netsuite_rag_mcp/config.py:8-42", "src/netsuite_rag_mcp/indexer.py:48-121"]
+        - item: "MCP tools for index, search, ask, and status; answer generation remains in Copilot."
+          source_refs: ["src/netsuite_rag_mcp/server.py:111-154", "README.md:14-18"]
+        - item: "Citations, source mappings, answer policy, basic conflict instructions, freshness rules, and redacted output."
+          source_refs: ["src/netsuite_rag_mcp/retriever.py:32-99", "src/netsuite_rag_mcp/policy.py:4-51", "src/netsuite_rag_mcp/redaction.py:5-22"]
+    out_of_scope_for_mvp:
+      - item: "Complex Web UI."
+        source_refs: ["docs/superpowers/specs/2026-05-13-netsuite-obsidian-rag-design.md:353-354"]
+      - item: "Standalone CLI or VS Code Command as the primary user entry."
+        source_refs: ["docs/superpowers/specs/2026-05-13-netsuite-obsidian-rag-design.md:354-355"]
+      - item: "Multi-user permission system, team deployment, and shared team index."
+        source_refs: ["docs/superpowers/specs/2026-05-13-netsuite-obsidian-rag-design.md:355-361"]
+      - item: "Automatic NetSuite account reads or automatic ZenTao crawling."
+        source_refs: ["docs/superpowers/specs/2026-05-13-netsuite-obsidian-rag-design.md:356-358"]
+      - item: "Realtime file watcher and complete evaluation platform."
+        source_refs: ["docs/superpowers/specs/2026-05-13-netsuite-obsidian-rag-design.md:359-363"]
+      - item: "Full code-repo symbol indexing and automatic note/code conflict diagnostics."
+        source_refs: ["docs/plan/20260514-dual-source-rag-design-export/research_findings_dual-source retrieval and conflict policy.yaml:572-594"]
+  acceptance_criteria:
+    exported_document:
+      - "Contains separate sections for phased roadmap, MVP boundaries, acceptance criteria, later enhancements, and workspace ownership."
+      - "States which workstream owns each capability: Obsidian workspace, RAG workspace, both, or external code repos."
+      - "Includes one note-first MVP path and one later dual-source expansion path."
+      - "Uses the same citation/authority vocabulary consistently: source_kind/source_type, source_path, authority, updated_at/indexed_at."
+    obsidian_workspace:
+      - "Every retrievable project note belongs under projects/<project>/ or knowledge/ unless the RAG config is updated."
+      - "Script, object, requirement, and troubleshooting notes carry the fields present in current templates."
+      - "Business/rationale/troubleshooting/decision material is human-authored; implementation facts reference code by IDs, links, repo path, symbol, or short sanitized snippets."
+      - "Secrets, tokens, cookies, API keys, raw PII, bulk logs, generated artifacts, and full repository mirrors are not stored as note content."
+    rag_workspace:
+      - "Config resolves include paths, excludes runtime/editor folders, and points to local Chroma settings."
+      - "Full and incremental indexing return counts and per-file errors without requiring Copilot model calls."
+      - "Search/ask tools support project/script/object/status metadata filters and return citation IDs."
+      - "ask output includes context_blocks, sources, answer_policy, diagnostics, and suggested response format."
+      - "Returned snippets are redacted before reaching Copilot."
+    dual_source_readiness:
+      - "Design names the future typed source registry and required note/code metadata fields."
+      - "Code is defined as authority for implementation facts; notes are defined as authority for business meaning, rationale, decisions, and troubleshooting unless stale."
+      - "Conflict behavior lists claims with citations and does not silently merge contradictory sources."
+      - "Citations include enough source role/path metadata to support separate Obsidian and RAG follow-up workstreams."
+  later_enhancements:
+    - enhancement: "Typed source registry v2 for notes and NetSuite repos."
+      belongs_to: "RAG workspace"
+      source_refs: ["docs/plan/20260514-dual-source-rag-design-export/research_findings_RAG 工作区优化.yaml:465-503"]
+    - enhancement: "Code repo scanner, language detection, symbol/function/class chunking, and line-range citations."
+      belongs_to: "RAG workspace"
+      source_refs: ["docs/plan/20260514-dual-source-rag-design-export/research_findings_RAG 工作区优化.yaml:514-557"]
+    - enhancement: "source_kind/source_type filters, authority filters, repo/language/symbol filters, and freshness filters."
+      belongs_to: "RAG workspace"
+      source_refs: ["docs/plan/20260514-dual-source-rag-design-export/research_findings_RAG 工作区优化.yaml:594-614"]
+    - enhancement: "Automated note/code conflict grouping, stale-note flags, and answer diagnostics."
+      belongs_to: "RAG workspace"
+      source_refs: ["docs/plan/20260514-dual-source-rag-design-export/research_findings_dual-source retrieval and conflict policy.yaml:572-594"]
+    - enhancement: "Decision-note template and validation if decisions remain a first-class note type."
+      belongs_to: "Obsidian workspace"
+      source_refs: ["docs/plan/20260514-dual-source-rag-design-export/research_findings_Obsidian workspace optimization.yaml:681-690"]
+    - enhancement: "Generated/manual _index pages policy: decide whether they are human navigation only or indexed by RAG."
+      belongs_to: "both"
+      source_refs: ["docs/plan/20260514-dual-source-rag-design-export/research_findings_Obsidian workspace optimization.yaml:691-699"]
+    - enhancement: "Deleted-file purge and per-source status/freshness reports."
+      belongs_to: "RAG workspace"
+      source_refs: ["docs/plan/20260514-dual-source-rag-design-export/research_findings_RAG 工作区优化.yaml:568-591"]
+    - enhancement: "Pre-index secret scanning and secret_detected review flags for repo contents."
+      belongs_to: "RAG workspace"
+      source_refs: ["docs/plan/20260514-dual-source-rag-design-export/research_findings_RAG 工作区优化.yaml:631-641"]
+    - enhancement: "Realtime watcher, team deployment/shared index, complete evaluation platform, and complex UI."
+      belongs_to: "later productization"
+      source_refs: ["docs/superpowers/specs/2026-05-13-netsuite-obsidian-rag-design.md:353-363"]
+    - enhancement: "Automatic NetSuite account reads and ZenTao connectors."
+      belongs_to: "later integrations"
+      source_refs: ["docs/superpowers/specs/2026-05-13-netsuite-obsidian-rag-design.md:356-358"]
+  workspace_ownership_matrix:
+    obsidian_workspace:
+      owns:
+        - "Index.md and _index human navigation."
+        - "projects/<project>/ overview, requirements, scripts, objects, troubleshooting, and decisions."
+        - "knowledge/ cross-project patterns and lessons."
+        - "templates/ and frontmatter discipline."
+        - "Human-authored summaries, rationale, requirements, troubleshooting, decisions, ZenTao URLs, and metadata anchors."
+      does_not_own:
+        - "Local vector DB runtime data such as .rag-index."
+        - "Full repository code mirrors or generated build/dependency output."
+        - "Raw secrets, tokens, cookies, customer PII, or long logs."
+        - "Automatic source crawling or answer-generation policy enforcement."
+      source_refs:
+        - "docs/superpowers/specs/2026-05-13-netsuite-obsidian-rag-design.md:52-101"
+        - "docs/plan/20260514-dual-source-rag-design-export/research_findings_Obsidian workspace optimization.yaml:454-655"
+    rag_workspace:
+      owns:
+        - "rag/sources.yaml and future source registry."
+        - "src/netsuite_rag_mcp package: config, parser, chunker, metadata, redaction, policy, vector_store, indexer, retriever, server."
+        - "tests/ for config, templates, parser/chunker, metadata/redaction/policy, indexer/retriever, and server tools."
+        - "ChromaDB/index manifest runtime artifacts and per-source status."
+        - "MCP tools, retrieval filters, context_blocks, sources, answer_policy, citations, redaction, and freshness/conflict diagnostics."
+      does_not_own:
+        - "Human editorial decisions about business meaning or requirement rationale."
+        - "Bulk writing generated summaries back into Obsidian notes."
+        - "Treating stale notes as implementation truth when code contradicts them."
+        - "Team permissions, external connectors, or UI in MVP."
+      source_refs:
+        - "rag/sources.yaml:1-11"
+        - "src/netsuite_rag_mcp/server.py:111-154"
+        - "docs/plan/20260514-dual-source-rag-design-export/research_findings_RAG 工作区优化.yaml:438-646"
+    external_code_repositories:
+      owns:
+        - "Current implementation facts, actual SuiteScript behavior, module dependencies, IDs present in code, and line-level implementation."
+      relation_to_workstreams: "Read-only source for future RAG indexing; referenced by Obsidian notes through IDs/paths/summaries but not copied wholesale."
+      source_refs:
+        - "docs/plan/20260514-dual-source-rag-design-export/research_findings_dual-source retrieval and conflict policy.yaml:399-552"
+  handoff_contracts_between_workstreams:
+    - contract: "Metadata fields"
+      details: "Obsidian supplies project, type, script_type, script_id, deployment_id, related_records, related_script_ids, object_type, status, tags, and zentao_urls; RAG preserves these as chunk metadata and filters."
+      source_refs: ["templates/script-note.md:1-11", "src/netsuite_rag_mcp/chunker.py:15-23", "src/netsuite_rag_mcp/server.py:89-108"]
+    - contract: "Indexed paths"
+      details: "Obsidian places retrievable notes under paths included by sources.yaml; RAG indexes only configured paths and excludes runtime/editor folders."
+      source_refs: ["rag/sources.yaml:1-8", "src/netsuite_rag_mcp/config.py:30-33"]
+    - contract: "Citations"
+      details: "RAG returns sources/citation IDs; exported dual-source design adds source_kind/source_type and path so users can distinguish note vs code evidence."
+      source_refs: ["src/netsuite_rag_mcp/retriever.py:32-78", "docs/plan/20260514-dual-source-rag-design-export/research_findings_dual-source retrieval and conflict policy.yaml:455-469"]
+    - contract: "Authority"
+      details: "Notes carry business/rationale/decision/troubleshooting authority; code carries implementation authority; conflict handling must classify fact type before selecting or listing sources."
+      source_refs: ["docs/plan/20260514-dual-source-rag-design-export/research_findings_dual-source retrieval and conflict policy.yaml:443-501"]
+open_questions:
+  - question: "Should Obsidian workspace and RAG workspace remain in one repository/Vault or be split into separate repos/workspaces?"
+    context: "Current workspace stores Obsidian notes, rag config, Python package, tests, and docs together; user says follow-up workstreams will optimize them separately."
+    type: decision_blocker
+    affects:
+      - "repository layout"
+      - "handoff contracts"
+      - "source path conventions"
+  - question: "Should the exported design standardize on `source_kind` or `source_type`, or document both as user-facing vs internal names?"
+    context: "Dual-source export text uses source_kind for citations; RAG workspace research uses source_type metadata."
+    type: decision_blocker
+    affects:
+      - "citation schema"
+      - "metadata filters"
+      - "answer examples"
+  - question: "Which NetSuite repo file types and repo roots are in scope for the first dual-source expansion?"
+    context: "Current RAG implementation scans Markdown only; future code indexing needs concrete repo locations and file globs."
+    type: decision_blocker
+    affects:
+      - "source registry"
+      - "code parser"
+      - "security excludes"
+  - question: "Should `_index/` pages be indexed by RAG or remain human navigation only?"
+    context: "The design includes _index navigation pages, while current sources.yaml indexes projects and knowledge."
+    type: nice_to_know
+    affects:
+      - "retrieval recall"
+      - "duplicate citations"
+  - question: "Should notes and code share one Chroma collection with source filters or use separate collections with score normalization?"
+    context: "Current config has one collection; dual-source research keeps this as a design choice."
+    type: research
+    affects:
+      - "retrieval ranking"
+      - "index lifecycle"
+      - "status reporting"
+gaps:
+  - area: "explicit workspace split"
+    description: "Original design contains component boundaries, but the current exported materials were separate by topic and did not yet consolidate an Obsidian-vs-RAG roadmap in one artifact."
+    impact: nice_to_know
+    affects:
+      - "exported design structure"
+      - "follow-up workstream handoff"
+  - area: "typed source registry"
+    description: "Current rag/sources.yaml is a flat note-oriented include/exclude config; it does not yet encode separate note/code source types, authority, repo IDs, or source IDs."
+    impact: decision_blocker
+    affects:
+      - "dual-source scanning"
+      - "workspace ownership"
+      - "per-source status"
+  - area: "code repo ingestion"
+    description: "Current indexer scans Markdown only; no repo scanner, code parser, symbol chunker, language detector, or git metadata collector exists."
+    impact: research_blocker
+    affects:
+      - "implementation fact retrieval"
+      - "line-level citations"
+  - area: "source role metadata in current output"
+    description: "Current sources include path, heading, doc_id, chunk_index, and updated_at, but do not expose source_kind/source_type for note-vs-code evidence."
+    impact: research_blocker
+    affects:
+      - "dual-source citations"
+      - "conflict policy"
+  - area: "automatic no-code-mirror enforcement"
+    description: "Templates include a code snippet section and policy discourages sensitive/bulk content, but there is no automatic guard preventing large code copies into Obsidian notes."
+    impact: nice_to_know
+    affects:
+      - "Obsidian hygiene"
+      - "note-code drift"
+  - area: "incremental stale deletion"
+    description: "Current incremental indexing skips unchanged files but does not compare manifest entries against the latest scan to purge deleted documents from Chroma."
+    impact: research_blocker
+    affects:
+      - "freshness"
+      - "stale retrieval prevention"

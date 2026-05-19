@@ -152,7 +152,7 @@ def parse_code_file(
     # ── Build doc_id, paths, timestamps ──
     vault_root = repo_root or path.parent
     relative_path = path.resolve().relative_to(vault_root.resolve()).as_posix()
-    doc_id = hashlib.sha1(relative_path.lower().encode("utf-8")).hexdigest()
+    doc_id = hashlib.sha1(f"{source_name}:{relative_path}".lower().encode("utf-8")).hexdigest()
     updated_at = datetime.fromtimestamp(path.stat().st_mtime, tz=timezone.utc).isoformat()
 
     return SourceDocument(

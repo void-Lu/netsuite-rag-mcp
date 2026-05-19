@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 import re
 import string
 from datetime import date
@@ -11,6 +10,7 @@ import yaml
 
 from netsuite_rag_mcp.indexer import index_sources as run_index_sources
 from netsuite_rag_mcp.redaction import count_redactions, redact_sensitive_text
+from netsuite_rag_mcp.runtime_config import RuntimeConfigError, resolve_runtime_config
 
 
 NOTE_TYPES = {"decision", "troubleshooting", "requirement", "knowledge", "script", "object"}
@@ -29,14 +29,14 @@ def _error(code: str, message: str) -> dict[str, Any]:
 
 
 def _vault_root(vault_root: str | None) -> tuple[Path | None, dict[str, Any] | None]:
-    value = vault_root or os.environ.get("NETSUITE_RAG_VAULT_ROOT")
-    if value:
-        return Path(value).expanduser().resolve(), None
-
-    root = Path.cwd().resolve()
-    if not (root / "rag" / "sources.yaml").exists():
-        return None, _error("missing_vault_root", "vault_root is required when rag/sources.yaml is not in cwd")
-    return root, None
+    try:
+        runtime = resolve_runtime_config(vault_root_arg=vault_root, require_sources_config=False)
+    except RuntimeConfigError as exc:
+        payload = _error(exc.code, str(exc))
+        if exc.config_path is not None:
+            payload["config_path"] = str(exc.config_path)
+        return None, payload
+    return runtime.vault_root, None
 
 
 def _has_path_traversal(value: str) -> bool:

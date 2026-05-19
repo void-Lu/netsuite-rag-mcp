@@ -1,0 +1,724 @@
+plan_id: "20260514-dual-source-rag-design-export"
+objective: "Produce concise design material for an exported document about Obsidian workspace optimization for a NetSuite RAG knowledge base."
+focus_area: "Obsidian workspace optimization"
+created_at: "2026-05-14"
+created_by: "GitHub Copilot researcher"
+status: completed
+tldr: |
+  - Obsidian is the human-knowledge layer: business context, requirements, troubleshooting, decisions, ZenTao URLs, and metadata anchors.
+  - Obsidian is not a code mirror: implementation truth should remain in local NetSuite project repositories; notes should store summaries, links, IDs, and decisions.
+  - The workspace design centers on `projects/`, `knowledge/`, `templates/`, `_index/`, and `rag/`; current indexing config targets `projects` and `knowledge`.
+  - Frontmatter anchors make RAG filtering possible: `project`, `script_type`, `script_id`, `related_records`, `related_script_ids`, `object_type`, `status`, `tags`, and `zentao_urls`.
+  - Key risks are note-code drift, sensitive-data leakage, stale status, metadata entropy, and retrieval noise; mitigations are bounded notes, required metadata, redaction, and source-specific filters.
+research_metadata:
+  methodology: "file_search for AGENTS.md/PRD/plan artifacts, semantic_search for Obsidian/NetSuite patterns, grep_search for frontmatter and workflow terms, read_file for current design docs, templates, config, parser/chunker, retriever, policy, and tests."
+  scope: "Concise export material for the Obsidian workspace layer; not an implementation plan and not code changes."
+  confidence: high
+  coverage: 88
+  decision_blockers: 0
+  research_blockers: 0
+  notes:
+    - "No `AGENTS.md`, `docs/PRD.yaml`, or `docs/skills/*.skill.md` file was found in the workspace search."
+    - "An earlier research file exists for `RAG 工作区优化`; this file narrows the scope to the Obsidian workspace responsibilities and export copy."
+files_analyzed:
+  - file: "2026-05-13-obsidian-netsuite-brainstorming.md"
+    path: "local context history/2026-05-13-obsidian-netsuite-brainstorming.md"
+    purpose: "Prior conversation context for NetSuite + Obsidian + RAG goals and selected architecture."
+    key_elements:
+      - element: "user context"
+        type: pattern
+        location: "local context history/2026-05-13-obsidian-netsuite-brainstorming.md:26"
+        description: "User is a NetSuite developer using Obsidian/VS Code and wants to improve NetSuite development workflow."
+        language: markdown
+      - element: "selected architecture"
+        type: pattern
+        location: "local context history/2026-05-13-obsidian-netsuite-brainstorming.md:66-70"
+        description: "Chosen architecture is Obsidian plus local vector store plus cloud LLM through RAG."
+        language: markdown
+      - element: "frontmatter fields"
+        type: variable
+        location: "local context history/2026-05-13-obsidian-netsuite-brainstorming.md:90-109"
+        description: "Captures script/object fields, enums, related records, status, and ZenTao/related-script body blocks."
+        language: markdown
+    lines: 199
+  - file: "2026-05-13-netsuite-obsidian-rag-design.md"
+    path: "docs/superpowers/specs/2026-05-13-netsuite-obsidian-rag-design.md"
+    purpose: "Main design source for Vault structure, templates, RAG workflow, policy, and MVP boundaries."
+    key_elements:
+      - element: "background and target content"
+        type: pattern
+        location: "docs/superpowers/specs/2026-05-13-netsuite-obsidian-rag-design.md:5-20"
+        description: "Design scope includes scripts, objects/config, requirements, ZenTao links, communications, decisions, and troubleshooting experience."
+        language: markdown
+      - element: "Vault structure"
+        type: pattern
+        location: "docs/superpowers/specs/2026-05-13-netsuite-obsidian-rag-design.md:48-78"
+        description: "Recommended directories include `_index`, `projects`, `knowledge`, `templates`, and `rag`."
+        language: markdown
+      - element: "script/object templates"
+        type: pattern
+        location: "docs/superpowers/specs/2026-05-13-netsuite-obsidian-rag-design.md:88-171"
+        description: "Defines script/object frontmatter and note sections."
+        language: markdown
+      - element: "MVP exclusions"
+        type: pattern
+        location: "docs/superpowers/specs/2026-05-13-netsuite-obsidian-rag-design.md:306-316"
+        description: "MVP excludes automatic NetSuite account reads, ZenTao crawling, realtime watchers, team deployment, and complex UI."
+        language: markdown
+    lines: 419
+  - file: "README.md"
+    path: "README.md"
+    purpose: "Current user-facing prototype summary."
+    key_elements:
+      - element: "MCP usage"
+        type: pattern
+        location: "README.md:4-14"
+        description: "Documents local MCP server setup, vault indexing, and RAG answering from Copilot."
+        language: markdown
+    lines: 14
+  - file: "Index.md"
+    path: "Index.md"
+    purpose: "Current Obsidian dashboard/index template."
+    key_elements:
+      - element: "Vault structure dashboard"
+        type: pattern
+        location: "Index.md:19-39"
+        description: "Contains a human navigation structure and Dataview file listing."
+        language: markdown
+      - element: "external resources and quick navigation"
+        type: pattern
+        location: "Index.md:82-110"
+        description: "Supports resource links, note links, tasks, and quick notes."
+        language: markdown
+    lines: 131
+  - file: "sources.yaml"
+    path: "rag/sources.yaml"
+    purpose: "Current RAG indexing source configuration."
+    key_elements:
+      - element: "include/exclude"
+        type: variable
+        location: "rag/sources.yaml:1-8"
+        description: "Index root is the vault; included paths are `projects` and `knowledge`; excluded names include `.git`, `.obsidian`, `.superpowers`, and `.rag-index`."
+        language: yaml
+      - element: "vector settings"
+        type: variable
+        location: "rag/sources.yaml:9-10"
+        description: "Chroma collection and embedding model are configured centrally."
+        language: yaml
+    lines: 10
+  - file: "script-note.md"
+    path: "templates/script-note.md"
+    purpose: "Current SuiteScript note template."
+    key_elements:
+      - element: "script frontmatter"
+        type: pattern
+        location: "templates/script-note.md:1-11"
+        description: "Defines script metadata fields: type, project, author, script_type, script_id, deployment_id, related records/scripts, status, and tags."
+        language: markdown
+      - element: "script title and sections"
+        type: pattern
+        location: "templates/script-note.md:13-30"
+        description: "Title pattern is `# RESTlet - 脚本名称`; sections include requirements, purpose, parameters, core logic, config, related scripts, and troubleshooting."
+        language: markdown
+    lines: 30
+  - file: "object-note.md"
+    path: "templates/object-note.md"
+    purpose: "Current NetSuite Object note template."
+    key_elements:
+      - element: "object frontmatter"
+        type: pattern
+        location: "templates/object-note.md:1-7"
+        description: "Defines object metadata fields: type, project, object_type, related_records, status, and tags."
+        language: markdown
+      - element: "object sections"
+        type: pattern
+        location: "templates/object-note.md:9-19"
+        description: "Sections cover ZenTao requirements, business purpose, filters/results, and usage locations."
+        language: markdown
+    lines: 19
+  - file: "requirement-note.md"
+    path: "templates/requirement-note.md"
+    purpose: "Current ZenTao-linked requirement template."
+    key_elements:
+      - element: "requirement frontmatter"
+        type: pattern
+        location: "templates/requirement-note.md:1-8"
+        description: "Defines requirement metadata fields including `zentao_urls`, related records/scripts, status, and tags."
+        language: markdown
+      - element: "requirement sections"
+        type: pattern
+        location: "templates/requirement-note.md:10-19"
+        description: "Sections cover ZenTao links, business background, acceptance criteria, related scripts, and related objects."
+        language: markdown
+    lines: 19
+  - file: "troubleshooting-note.md"
+    path: "templates/troubleshooting-note.md"
+    purpose: "Current troubleshooting template."
+    key_elements:
+      - element: "troubleshooting frontmatter"
+        type: pattern
+        location: "templates/troubleshooting-note.md:1-8"
+        description: "Defines troubleshooting metadata fields including project, author, related records/scripts, status, and tags."
+        language: markdown
+      - element: "troubleshooting sections"
+        type: pattern
+        location: "templates/troubleshooting-note.md:10-26"
+        description: "Sections capture symptom, impact, root cause, solution, related scripts/objects, and ZenTao requirement link."
+        language: markdown
+    lines: 26
+  - file: "test_templates.py"
+    path: "tests/test_templates.py"
+    purpose: "Template field regression tests."
+    key_elements:
+      - element: "script required fields"
+        type: function
+        location: "tests/test_templates.py:7-24"
+        description: "Asserts required script template metadata and body sections are present."
+        language: python
+      - element: "object required fields"
+        type: function
+        location: "tests/test_templates.py:27-43"
+        description: "Asserts required object template metadata and body sections are present."
+        language: python
+    lines: 43
+  - file: "models.py"
+    path: "src/netsuite_rag_mcp/models.py"
+    purpose: "RAG data model and metadata field registry."
+    key_elements:
+      - element: "ARRAY_METADATA_FIELDS"
+        type: variable
+        location: "src/netsuite_rag_mcp/models.py:7"
+        description: "Array metadata fields are `related_records`, `related_script_ids`, `tags`, and `zentao_urls`."
+        language: python
+      - element: "Chunk/SearchResult"
+        type: class
+        location: "src/netsuite_rag_mcp/models.py:32-49"
+        description: "Chunk and search result objects carry text, metadata, and retrieval coordinates."
+        language: python
+    lines: 49
+  - file: "parser.py"
+    path: "src/netsuite_rag_mcp/parser.py"
+    purpose: "Markdown frontmatter parser."
+    key_elements:
+      - element: "parse_markdown_file"
+        type: function
+        location: "src/netsuite_rag_mcp/parser.py:14-33"
+        description: "Extracts frontmatter/body, computes `doc_id`, records source path, and derives `updated_at` from file mtime."
+        language: python
+      - element: "_normalize_frontmatter"
+        type: function
+        location: "src/netsuite_rag_mcp/parser.py:43-50"
+        description: "Normalizes configured array frontmatter fields to string lists."
+        language: python
+    lines: 50
+  - file: "chunker.py"
+    path: "src/netsuite_rag_mcp/chunker.py"
+    purpose: "Markdown chunking behavior."
+    key_elements:
+      - element: "chunk_document"
+        type: function
+        location: "src/netsuite_rag_mcp/chunker.py:6-34"
+        description: "Each chunk inherits frontmatter and adds doc/chunk/source/heading/update metadata."
+        language: python
+      - element: "_split_h2_sections"
+        type: function
+        location: "src/netsuite_rag_mcp/chunker.py:37-56"
+        description: "Splits by H2 headings outside fenced code blocks."
+        language: python
+    lines: 56
+  - file: "server.py"
+    path: "src/netsuite_rag_mcp/server.py"
+    purpose: "MCP tool layer and current metadata filters."
+    key_elements:
+      - element: "_build_filters"
+        type: function
+        location: "src/netsuite_rag_mcp/server.py:89-108"
+        description: "Current filters cover project, script_type, related_records, related_script_ids, object_type, and status."
+        language: python
+      - element: "MCP tools"
+        type: function
+        location: "src/netsuite_rag_mcp/server.py:111-154"
+        description: "Exposes read/index/status tools: index, search, ask, and get status."
+        language: python
+    lines: 154
+  - file: "redaction.py"
+    path: "src/netsuite_rag_mcp/redaction.py"
+    purpose: "Sensitive text masking before retrieval output."
+    key_elements:
+      - element: "REDACTION_PATTERNS"
+        type: variable
+        location: "src/netsuite_rag_mcp/redaction.py:5-15"
+        description: "Masks phone numbers, emails, ID cards, bank cards, Authorization/Cookie/session IDs, API-like tokens, and password/secret/token/api_key assignments."
+        language: python
+      - element: "redact_sensitive_text"
+        type: function
+        location: "src/netsuite_rag_mcp/redaction.py:18-22"
+        description: "Applies redaction regexes sequentially before text is returned."
+        language: python
+    lines: 22
+  - file: "policy.py"
+    path: "src/netsuite_rag_mcp/policy.py"
+    purpose: "Answer policy returned to Copilot."
+    key_elements:
+      - element: "safety and citations"
+        type: function
+        location: "src/netsuite_rag_mcp/policy.py:4-51"
+        description: "Requires answers to use returned context, cite sources, handle conflicts, show uncertainty, and avoid exposing secrets/PII."
+        language: python
+    lines: 51
+patterns_found:
+  - category: structure
+    pattern: "Project context and reusable knowledge are separated."
+    description: "Design docs put project-specific requirements/scripts/objects/troubleshooting/decisions under `projects/<project>/`, while cross-project patterns belong under `knowledge/`."
+    examples:
+      - file: "docs/superpowers/specs/2026-05-13-netsuite-obsidian-rag-design.md"
+        location: "docs/superpowers/specs/2026-05-13-netsuite-obsidian-rag-design.md:48-84"
+        snippet: "projects/ ... knowledge/ ... templates/ ... rag/"
+      - file: "rag/sources.yaml"
+        location: "rag/sources.yaml:1-4"
+        snippet: "include: projects, knowledge"
+    prevalence: common
+  - category: naming
+    pattern: "Frontmatter uses stable snake_case metadata anchors."
+    description: "Templates and runtime filters use fields such as `project`, `script_type`, `script_id`, `related_records`, `related_script_ids`, `object_type`, `status`, and `zentao_urls`."
+    examples:
+      - file: "templates/script-note.md"
+        location: "templates/script-note.md:1-11"
+        snippet: "script_type: restlet / related_records: [] / related_script_ids: [] / status: active"
+      - file: "src/netsuite_rag_mcp/server.py"
+        location: "src/netsuite_rag_mcp/server.py:89-108"
+        snippet: "project, script_type, related_records, related_script_ids, object_type, status"
+    prevalence: common
+  - category: architecture
+    pattern: "Human notes are parsed as Markdown with frontmatter and H2 sections."
+    description: "Parser extracts YAML frontmatter; chunker splits body by `##` sections and attaches frontmatter metadata to every chunk."
+    examples:
+      - file: "src/netsuite_rag_mcp/parser.py"
+        location: "src/netsuite_rag_mcp/parser.py:14-33"
+        snippet: "frontmatter, body = _split_frontmatter(text)"
+      - file: "src/netsuite_rag_mcp/chunker.py"
+        location: "src/netsuite_rag_mcp/chunker.py:13-24"
+        snippet: "metadata = dict(document.frontmatter); metadata.update(...)"
+    prevalence: common
+  - category: error_handling
+    pattern: "Sensitive output is redacted and answer policy forbids secret/PII disclosure."
+    description: "Retrieval output is passed through redaction and the answer policy requires not outputting credentials, tokens, cookies, IDs, bank cards, phone numbers, or emails."
+    examples:
+      - file: "src/netsuite_rag_mcp/redaction.py"
+        location: "src/netsuite_rag_mcp/redaction.py:5-22"
+        snippet: "REDACTION_PATTERNS ... redact_sensitive_text"
+      - file: "src/netsuite_rag_mcp/policy.py"
+        location: "src/netsuite_rag_mcp/policy.py:31-35"
+        snippet: "不输出手机号、身份证号、银行卡号、邮箱、API Key、Token、密码、Secret、Cookie"
+    prevalence: common
+  - category: testing
+    pattern: "Template metadata fields are regression-tested."
+    description: "Tests assert that script/object templates include required frontmatter fields and body sections."
+    examples:
+      - file: "tests/test_templates.py"
+        location: "tests/test_templates.py:7-43"
+        snippet: "assert field in text"
+    prevalence: occasional
+related_architecture:
+  components_relevant_to_domain:
+    - component: "Obsidian Vault"
+      responsibility: "Editing and navigation layer for human-authored NetSuite knowledge, not authoritative implementation storage."
+      location: "Index.md:19-131; docs/superpowers/specs/2026-05-13-netsuite-obsidian-rag-design.md:48-84; user_request"
+      relationship_to_domain: "Defines how exported design material should position the workspace."
+    - component: "projects/<project>/"
+      responsibility: "Holds project-local overview, requirements, scripts, objects, troubleshooting, and decisions."
+      location: "docs/superpowers/specs/2026-05-13-netsuite-obsidian-rag-design.md:52-72"
+      relationship_to_domain: "Main place for project facts and context anchors."
+    - component: "knowledge/"
+      responsibility: "Holds cross-project reusable SuiteScript patterns, object playbooks, common errors, and integration patterns."
+      location: "docs/superpowers/specs/2026-05-13-netsuite-obsidian-rag-design.md:73-78"
+      relationship_to_domain: "Prevents repeating project-specific notes when knowledge is reusable."
+    - component: "templates/"
+      responsibility: "Provides copyable note skeletons and frontmatter consistency."
+      location: "templates/script-note.md:1; templates/object-note.md:1; templates/requirement-note.md:1; templates/troubleshooting-note.md:1"
+      relationship_to_domain: "Defines metadata anchors for export and RAG filters."
+    - component: "rag/sources.yaml"
+      responsibility: "Selects which Vault paths are indexed and which runtime artifacts are excluded."
+      location: "rag/sources.yaml:1-10"
+      relationship_to_domain: "Currently indexes `projects` and `knowledge`, so design should put retrievable knowledge there."
+    - component: "MCP retriever/context builder"
+      responsibility: "Searches indexed chunks, applies filters, redacts returned text, and returns answer policy/citations."
+      location: "src/netsuite_rag_mcp/retriever.py:11-91; src/netsuite_rag_mcp/policy.py:4-51"
+      relationship_to_domain: "Consumes Obsidian metadata anchors created by note templates."
+  interfaces_used_by_domain:
+    - interface: "Markdown frontmatter"
+      location: "templates/*.md:1-11; src/netsuite_rag_mcp/parser.py:14-50"
+      usage_pattern: "Human notes expose structured metadata to the parser and retriever."
+    - interface: "H2 body sections"
+      location: "templates/script-note.md:16-30; src/netsuite_rag_mcp/chunker.py:37-56"
+      usage_pattern: "Chunking follows `##` headings, so export material should preserve stable sections."
+    - interface: "MCP metadata filters"
+      location: "src/netsuite_rag_mcp/server.py:89-108"
+      usage_pattern: "Questions can be restricted by project, script type, related records/scripts, object type, and status."
+    - interface: "Array metadata registry"
+      location: "src/netsuite_rag_mcp/models.py:7; src/netsuite_rag_mcp/metadata.py:9-54"
+      usage_pattern: "List fields are normalized, serialized, restored, and filterable."
+  data_flow_involving_domain: "Author writes structured Obsidian notes -> `rag/sources.yaml` includes projects/knowledge -> parser extracts frontmatter -> chunker splits `##` sections and attaches metadata -> Chroma stores chunks -> retriever filters by metadata -> context/policy/citations are returned to Copilot."
+  key_relationships_to_domain:
+    - from: "templates/script-note.md"
+      to: "parser.parse_markdown_file"
+      relationship: imports
+    - from: "parser.parse_markdown_file"
+      to: "chunker.chunk_document"
+      relationship: calls
+    - from: "chunker.chunk_document"
+      to: "metadata fields"
+      relationship: composes
+    - from: "server._build_filters"
+      to: "metadata.metadata_matches_filters"
+      relationship: calls
+    - from: "retriever.search_netsuite_knowledge"
+      to: "redaction.redact_sensitive_text"
+      relationship: calls
+related_technology_stack:
+  languages_used_in_domain:
+    - markdown
+    - yaml
+    - python
+  frameworks_used_in_domain:
+    - name: "Obsidian Markdown"
+      usage_in_domain: "Human editing, wiki-style navigation, Dataview/tasks blocks, and note templates."
+    - name: "FastMCP / MCP Python SDK"
+      usage_in_domain: "Local tool surface for indexing, search, ask, and status."
+    - name: "pytest"
+      usage_in_domain: "Template and RAG subsystem regression tests."
+  libraries_used_in_domain:
+    - name: "PyYAML"
+      purpose_in_domain: "Read `rag/sources.yaml` and Markdown frontmatter."
+    - name: "ChromaDB"
+      purpose_in_domain: "Local vector store for parsed Obsidian chunks."
+    - name: "sentence-transformers"
+      purpose_in_domain: "Embedding model for multilingual notes."
+  external_apis_used_in_domain:
+    - name: "VS Code Copilot MCP tool calls"
+      integration_point: "Copilot calls local RAG tools; generation remains in Copilot while the vault/index stay local."
+related_conventions:
+  naming_patterns_in_domain: "Use lowercase snake_case frontmatter fields; script_type values are `restlet`, `suitelet`, `userevent`, `mapreduce`, `clientscript`; status values are `active` or `inactive`; script titles follow `# RESTlet - 脚本名称` / `# <Script Type> - <脚本名称>`."
+  structure_of_domain: "Project-specific notes belong under `projects/<project>/`; reusable patterns belong under `knowledge/`; templates are kept under `templates/`; RAG runtime config belongs under `rag/`; dashboard/index pages are navigation aids."
+  error_handling_in_domain: "The Obsidian layer avoids storing raw secrets/PII; retrieval redacts sensitive text and policy requires uncertainty/citation handling."
+  testing_in_domain: "Templates have focused tests for required script/object metadata fields; RAG tests also validate parser/chunker metadata behavior and filters."
+  documentation_in_domain: "Existing design docs document Vault structure, template fields, indexing flow, Answer Policy, and MVP exclusions."
+related_dependencies:
+  internal:
+    - component: "templates -> parser/chunker"
+      relationship_to_domain: "Template frontmatter and H2 sections become parsed metadata and retrievable chunks."
+      direction: outbound
+    - component: "rag/sources.yaml -> config/indexer"
+      relationship_to_domain: "Configured include/exclude paths control which notes enter the local RAG index."
+      direction: outbound
+    - component: "metadata fields -> server filters"
+      relationship_to_domain: "Frontmatter fields are used to restrict retrieval by project/script/object/status relationships."
+      direction: bidirectional
+    - component: "redaction/policy -> retriever"
+      relationship_to_domain: "Safety rules and redaction protect returned context and model answers."
+      direction: outbound
+  external:
+    - name: "Obsidian"
+      purpose_for_domain: "Workspace for creating and browsing Markdown notes."
+    - name: "ZenTao"
+      purpose_for_domain: "Requirement URLs stored as anchors, not automatically crawled by MVP."
+    - name: "NetSuite project repositories"
+      purpose_for_domain: "Source of truth for implementation details outside Obsidian notes."
+domain_security_considerations:
+  sensitive_areas:
+    - area: "Secrets and credentials in notes"
+      location: "src/netsuite_rag_mcp/redaction.py:5-22; src/netsuite_rag_mcp/policy.py:31-35"
+      concern: "API keys, tokens, cookies, passwords, and secrets must not be stored or returned in raw form."
+    - area: "Personal/customer data in troubleshooting examples"
+      location: "src/netsuite_rag_mcp/redaction.py:5-9; src/netsuite_rag_mcp/policy.py:31-35"
+      concern: "Phone, email, ID-card, bank-card, and customer identifiers can leak through notes or retrieved context."
+    - area: "Code mirror drift"
+      location: "user_request"
+      concern: "Copying code into Obsidian creates stale, conflicting implementation facts."
+  authentication_patterns_in_domain: "No Obsidian/RAG authentication layer is implemented in the local prototype; the MVP is local-user oriented."
+  authorization_patterns_in_domain: "The original MVP excludes multi-user permission systems and team deployment."
+  data_validation_in_domain: "Frontmatter arrays are normalized by parser; metadata filters only use known non-empty filter fields; config is loaded with `yaml.safe_load`."
+testing_patterns:
+  framework: "pytest"
+  coverage_areas:
+    - "template required fields"
+    - "frontmatter parsing and array normalization"
+    - "H2 chunking and metadata inheritance"
+    - "metadata serialization and filtering"
+    - "redaction and Answer Policy"
+    - "MCP tool wrapper behavior"
+  test_organization: "Focused tests under `tests/`, with one module per subsystem or template category."
+  mock_patterns:
+    - "Temporary vaults and fake embedders are used for index/retrieval tests."
+    - "Template tests read `templates/*.md` directly and assert required field presence."
+export_design_material:
+  responsibilities:
+    - area: "Obsidian Vault"
+      material: "Store human knowledge: business context, requirement background, troubleshooting history, decisions, ZenTao URLs, and metadata anchors. Do not make it a bulk code mirror."
+      anchors:
+        - "user_request"
+        - "docs/superpowers/specs/2026-05-13-netsuite-obsidian-rag-design.md:5-20"
+    - area: "Project notes"
+      material: "Keep project-scoped facts under `projects/<project>/`: overview, requirements, scripts, objects, troubleshooting, and decisions."
+      anchors:
+        - "docs/superpowers/specs/2026-05-13-netsuite-obsidian-rag-design.md:52-72"
+    - area: "Knowledge notes"
+      material: "Keep reusable cross-project patterns under `knowledge/`: SuiteScript patterns, NetSuite object playbooks, common errors, and integration patterns."
+      anchors:
+        - "docs/superpowers/specs/2026-05-13-netsuite-obsidian-rag-design.md:73-78"
+    - area: "Templates/frontmatter"
+      material: "Provide consistent fields so RAG can filter by project, script type, related records, related scripts, object type, status, tags, and ZenTao URLs."
+      anchors:
+        - "templates/script-note.md:1-11"
+        - "templates/object-note.md:1-7"
+        - "templates/requirement-note.md:1-8"
+        - "src/netsuite_rag_mcp/server.py:89-108"
+    - area: "Code repositories"
+      material: "Remain the source of truth for implementation details; Obsidian should reference code via IDs, repo paths, summaries, and decisions rather than copied files."
+      anchors:
+        - "user_request"
+    - area: "RAG tooling"
+      material: "Index curated notes from configured paths, preserve citations, apply metadata filters, redact returned text, and return an answer policy to Copilot."
+      anchors:
+        - "rag/sources.yaml:1-10"
+        - "src/netsuite_rag_mcp/retriever.py:11-91"
+  directory_structure:
+    tree: |
+      homework/
+      ├─ Index.md                         # dashboard and navigation
+      ├─ _index/                          # manual/generated navigation pages
+      │  ├─ projects.md
+      │  ├─ scripts.md
+      │  ├─ objects.md
+      │  └─ troubleshooting.md
+      ├─ projects/
+      │  └─ <project>/
+      │     ├─ 00-overview.md
+      │     ├─ requirements/
+      │     ├─ scripts/
+      │     │  ├─ restlet/
+      │     │  ├─ suitelet/
+      │     │  ├─ userevent/
+      │     │  ├─ mapreduce/
+      │     │  └─ clientscript/
+      │     ├─ objects/
+      │     │  ├─ savedsearch/
+      │     │  ├─ customlist/
+      │     │  ├─ customrecord/
+      │     │  ├─ workflow/
+      │     │  ├─ role/
+      │     │  └─ deployment/
+      │     ├─ troubleshooting/
+      │     └─ decisions/
+      ├─ knowledge/
+      │  ├─ suitescript-patterns/
+      │  ├─ netsuite-object-playbooks/
+      │  ├─ common-errors/
+      │  └─ integration-patterns/
+      ├─ templates/
+      └─ rag/
+    source_refs:
+      - "docs/superpowers/specs/2026-05-13-netsuite-obsidian-rag-design.md:48-78"
+      - "rag/sources.yaml:1-4"
+  templates_frontmatter_fields:
+    common_fields:
+      - "type"
+      - "project"
+      - "author where applicable"
+      - "related_records"
+      - "related_script_ids where applicable"
+      - "status: active|inactive"
+      - "tags"
+    script_note:
+      title_pattern: "# <Script Type> - 脚本名称, e.g. `# RESTlet - 脚本名称`"
+      fields:
+        type: "script"
+        project: "project key"
+        author: "developer name"
+        script_type: "restlet|suitelet|userevent|mapreduce|clientscript"
+        script_id: "customscript_xxx"
+        deployment_id: "customdeploy_xxx"
+        related_records: "array of NetSuite record/list IDs"
+        related_script_ids: "array of linked script IDs"
+        status: "active|inactive"
+        tags: "[netsuite, suitescript, <script_type>]"
+      body_sections:
+        - "关联需求 / 禅道 URLs"
+        - "用途"
+        - "入口参数"
+        - "核心逻辑"
+        - "代码片段 only if brief and sanitized"
+        - "相关配置"
+        - "相关脚本"
+        - "排坑记录"
+      source_refs:
+        - "templates/script-note.md:1-30"
+        - "user_request"
+    object_note:
+      title_pattern: "# <Object Type> - <object/search name>"
+      fields:
+        type: "object"
+        project: "project key"
+        object_type: "savedsearch|customlist|customrecord|workflow|role|deployment"
+        related_records: "array of related records/lists"
+        status: "active|inactive"
+        tags: "[netsuite, <object_type>]"
+      body_sections:
+        - "关联需求 / 禅道 URLs"
+        - "业务目的"
+        - "条件 Filters"
+        - "结果 Results"
+        - "使用位置"
+      source_refs:
+        - "templates/object-note.md:1-19"
+        - "docs/superpowers/specs/2026-05-13-netsuite-obsidian-rag-design.md:135-171"
+    requirement_note:
+      fields:
+        type: "requirement"
+        project: "project key"
+        zentao_urls: "array of ZenTao URLs"
+        related_records: "array"
+        related_script_ids: "array"
+        status: "active|inactive"
+        tags: "[netsuite, requirement]"
+      body_sections:
+        - "禅道链接"
+        - "业务背景"
+        - "验收标准"
+        - "相关脚本"
+        - "相关 Object"
+      source_refs:
+        - "templates/requirement-note.md:1-19"
+    troubleshooting_note:
+      fields:
+        type: "troubleshooting"
+        project: "project key"
+        author: "developer/support owner"
+        related_records: "array"
+        related_script_ids: "array"
+        status: "active|inactive"
+        tags: "[netsuite, troubleshooting]"
+      body_sections:
+        - "现象"
+        - "影响范围"
+        - "根因"
+        - "解决方案"
+        - "相关脚本"
+        - "相关 Object"
+        - "关联需求 / 禅道 URL"
+      source_refs:
+        - "templates/troubleshooting-note.md:1-26"
+    decision_note:
+      status: "Design responsibility exists under `projects/<project>/decisions/`; no current `templates/decision-note.md` file was found."
+      minimum_fields_for_export_copy:
+        type: "decision"
+        project: "project key"
+        author: "decision owner"
+        decision_status: "proposed|accepted|superseded"
+        related_records: "array"
+        related_script_ids: "array"
+        zentao_urls: "array where relevant"
+        decision_date: "YYYY-MM-DD"
+        tags: "[netsuite, decision]"
+      source_refs:
+        - "docs/superpowers/specs/2026-05-13-netsuite-obsidian-rag-design.md:52-72"
+        - "user_request"
+  what_not_to_store:
+    - item: "Full codebase copies or bulk implementation mirrors."
+      reason: "Creates drift against source repositories and conflicts with the stated Obsidian role."
+      source_refs:
+        - "user_request"
+    - item: "API keys, tokens, passwords, secrets, cookies, Authorization headers, or session IDs."
+      reason: "Redaction and policy treat these as sensitive values."
+      source_refs:
+        - "src/netsuite_rag_mcp/redaction.py:10-15"
+        - "src/netsuite_rag_mcp/policy.py:31-35"
+    - item: "Raw customer PII or financial identifiers such as phone, email, ID-card, or bank-card data."
+      reason: "Redaction patterns explicitly mask these classes."
+      source_refs:
+        - "src/netsuite_rag_mcp/redaction.py:5-9"
+        - "src/netsuite_rag_mcp/policy.py:31-35"
+    - item: "Large logs, generated files, build outputs, dependency folders, or vector DB runtime artifacts."
+      reason: "Current source config excludes `.git`, `.obsidian`, `.superpowers`, and `.rag-index`; dual-source research also identifies generated/build folders as exclude candidates."
+      source_refs:
+        - "rag/sources.yaml:5-8"
+        - "docs/plan/20260514-dual-source-rag-design-export/research_findings_RAG 工作区优化.yaml:440-470"
+    - item: "Automatically scraped NetSuite account data or ZenTao content."
+      reason: "The MVP excludes automatic NetSuite reads and automatic ZenTao crawling; store URLs and human summaries instead."
+      source_refs:
+        - "docs/superpowers/specs/2026-05-13-netsuite-obsidian-rag-design.md:306-316"
+  workflow_rules:
+    - "Create project facts in `projects/<project>/`; move reusable lessons to `knowledge/` after they apply beyond one project."
+    - "Use templates first; keep required frontmatter fields filled before indexing."
+    - "Use lowercase enums for `script_type` and `status`; keep `related_records` and `related_script_ids` as arrays."
+    - "Use titles that start with the artifact type, such as `# RESTlet - 脚本名称`, so humans and search results can classify notes quickly."
+    - "Record ZenTao URLs in `zentao_urls` for requirement notes and in `关联需求` sections for script/object/troubleshooting notes."
+    - "Store implementation anchors (`script_id`, `deployment_id`, `object_type`, repo path, line/symbol summary) instead of copying full implementation files."
+    - "When fixing an issue, capture symptom, impact, root cause, solution, related scripts/objects, and linked requirement before moving reusable lessons to `knowledge/common-errors/`."
+    - "Run/rely on RAG indexing only for curated note paths currently included by `rag/sources.yaml`: `projects` and `knowledge`."
+  risks_mitigations:
+    - risk: "Notes become a stale code mirror."
+      mitigation: "Keep code in repositories; Obsidian stores summaries, IDs, decisions, links, and troubleshooting context."
+      source_refs:
+        - "user_request"
+    - risk: "RAG answers mix unrelated projects or stale inactive artifacts."
+      mitigation: "Require `project`, `status`, `script_type`, `object_type`, `related_records`, and `related_script_ids`; use server filters that already support these fields."
+      source_refs:
+        - "src/netsuite_rag_mcp/server.py:89-108"
+    - risk: "Sensitive data leaks through notes or retrieved context."
+      mitigation: "Do not store secrets/PII; rely on redaction and answer policy as a second line of defense, not as permission to store raw sensitive data."
+      source_refs:
+        - "src/netsuite_rag_mcp/redaction.py:5-22"
+        - "src/netsuite_rag_mcp/policy.py:31-35"
+    - risk: "Metadata entropy reduces retrieval precision."
+      mitigation: "Use templates and required-field tests; keep enum values fixed and arrays normalized."
+      source_refs:
+        - "tests/test_templates.py:7-43"
+        - "src/netsuite_rag_mcp/parser.py:43-50"
+    - risk: "Important project context is not indexed because it is placed outside configured paths."
+      mitigation: "Put retrievable notes under `projects` or `knowledge`, matching current `rag/sources.yaml`."
+      source_refs:
+        - "rag/sources.yaml:1-4"
+    - risk: "Decision rationale is scattered in scripts or chat history."
+      mitigation: "Keep decision notes under `projects/<project>/decisions/` with related records/scripts and ZenTao anchors."
+      source_refs:
+        - "docs/superpowers/specs/2026-05-13-netsuite-obsidian-rag-design.md:52-72"
+        - "user_request"
+open_questions:
+  - question: "Should a dedicated `templates/decision-note.md` be added to match the documented `decisions/` directory?"
+    context: "The design and user request include decisions, but the current visible template set contains script, object, requirement, and troubleshooting templates only."
+    type: research
+    affects:
+      - "decision note consistency"
+      - "frontmatter validation"
+  - question: "Should `_index/` pages be indexed by RAG or remain human navigation only?"
+    context: "The design includes `_index/`, while current `rag/sources.yaml` indexes only `projects` and `knowledge`."
+    type: nice_to_know
+    affects:
+      - "retrieval recall"
+      - "duplicate index entries"
+gaps:
+  - area: "decision template"
+    description: "No current `templates/decision-note.md` exists even though decisions are part of the designed project structure and user context."
+    impact: nice_to_know
+    affects:
+      - "decision note consistency"
+      - "export completeness"
+  - area: "configured source directories"
+    description: "`rag/sources.yaml` includes `projects` and `knowledge`; the export material depends on placing retrievable notes there."
+    impact: nice_to_know
+    affects:
+      - "index coverage"
+      - "retrieval quality"
+  - area: "not-code-mirror enforcement"
+    description: "The current Obsidian template layer documents code snippets and related configuration but has no automatic guard preventing full code copies into notes."
+    impact: research_blocker
+    affects:
+      - "note-code drift"
+      - "sensitive-data exposure"
+  - area: "frontmatter enum validation"
+    description: "Templates and tests assert field presence, but no schema validation currently enforces enum values such as `script_type` or `status` at note-authoring time."
+    impact: nice_to_know
+    affects:
+      - "metadata consistency"
+      - "filter precision"

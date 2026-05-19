@@ -1,0 +1,600 @@
+plan_id: "20260514-dual-source-rag-design-export"
+objective: "Produce concise design material for an exported document covering dual-source retrieval, note/code merge, citations, conflict policy, answer structure, and a concrete example."
+focus_area: "dual-source retrieval and conflict policy"
+created_at: "2026-05-14"
+created_by: "GitHub Copilot researcher"
+status: completed
+tldr: |
+  - Current implementation is a note-first RAG MCP prototype: `ask_netsuite_rag` returns `context_blocks`, `sources`, `answer_policy`, diagnostics, and a suggested answer format.
+  - Current citations use `[Sx]` IDs and source mappings with `source_path`, `heading`, `doc_id`, `chunk_index`, and `updated_at`; exported dual-source answers should add `source_kind=note|code` to each citation entry.
+  - Notes are the authority for business meaning, rationale, requirements, decisions, and troubleshooting; code is the authority for current implementation facts.
+  - Conflict resolution should classify the disputed field first: code wins for implementation facts; notes win for business/rationale unless the note is stale, superseded, or contradicted by current code for an implementation detail.
+research_metadata:
+  methodology: "semantic_search for domain examples; grep_search for citations/conflict/source metadata; read_file for existing research YAML, original design spec, README, config, indexer, retriever, policy, metadata, vector store, server, and tests."
+  scope: "Export-ready design material only; no code implementation and no Markdown document creation."
+  confidence: high
+  coverage: 88
+  decision_blockers: 0
+  research_blockers: 0
+  notes:
+    - "No `AGENTS.md`, `docs/PRD.yaml`, or `docs/skills/*.skill.md` files were found."
+    - "The current workspace has `rag/sources.yaml` configured for `projects` and `knowledge`, but those directories are not present in the current root listing; retrieval examples therefore use design/test fixture paths."
+files_analyzed:
+  - file: "research_findings_RAG 工作区优化.yaml"
+    path: "docs/plan/20260514-dual-source-rag-design-export/research_findings_RAG 工作区优化.yaml"
+    purpose: "Prior research for dual-source workspace optimization and source registry design."
+    key_elements:
+      - element: "dual-source source roles"
+        type: pattern
+        location: "docs/plan/20260514-dual-source-rag-design-export/research_findings_RAG 工作区优化.yaml:11"
+        description: "Identifies curated Obsidian notes and authoritative code repos as distinct source types."
+        language: yaml
+      - element: "source metadata proposal"
+        type: pattern
+        location: "docs/plan/20260514-dual-source-rag-design-export/research_findings_RAG 工作区优化.yaml:529-567"
+        description: "Defines proposed common note/code fields including source type, authority, source path, freshness, repo, language, symbol, and line coordinates."
+        language: yaml
+      - element: "filter changes"
+        type: pattern
+        location: "docs/plan/20260514-dual-source-rag-design-export/research_findings_RAG 工作区优化.yaml:594-646"
+        description: "Identifies missing retrieval filters for source type, source ID, repo ID, language, symbol, authority, and freshness."
+        language: yaml
+    lines: 704
+  - file: "research_findings_Obsidian workspace optimization.yaml"
+    path: "docs/plan/20260514-dual-source-rag-design-export/research_findings_Obsidian workspace optimization.yaml"
+    purpose: "Prior research for Obsidian as the human-knowledge layer."
+    key_elements:
+      - element: "Obsidian role"
+        type: pattern
+        location: "docs/plan/20260514-dual-source-rag-design-export/research_findings_Obsidian workspace optimization.yaml:7-12"
+        description: "Positions notes as business context, requirements, troubleshooting, decisions, and metadata anchors rather than a code mirror."
+        language: yaml
+      - element: "RAG tooling responsibility"
+        type: pattern
+        location: "docs/plan/20260514-dual-source-rag-design-export/research_findings_Obsidian workspace optimization.yaml:392-397"
+        description: "States that RAG tooling indexes curated notes, preserves citations, applies filters, redacts text, and returns answer policy."
+        language: yaml
+    lines: 650
+  - file: "2026-05-13-netsuite-obsidian-rag-design.md"
+    path: "docs/superpowers/specs/2026-05-13-netsuite-obsidian-rag-design.md"
+    purpose: "Original RAG design for query flow, answer policy, citations, conflicts, and component boundaries."
+    key_elements:
+      - element: "query path"
+        type: pattern
+        location: "docs/superpowers/specs/2026-05-13-netsuite-obsidian-rag-design.md:231-245"
+        description: "Documents the user-to-Copilot-to-MCP-to-router-to-retrieval-to-context-to-answer path."
+        language: markdown
+      - element: "citation and traceability"
+        type: pattern
+        location: "docs/superpowers/specs/2026-05-13-netsuite-obsidian-rag-design.md:274-281"
+        description: "Requires key facts to cite `[Sx]` and source mappings with file path, title, `doc_id`, and `chunk_index`."
+        language: markdown
+      - element: "conflict handling"
+        type: pattern
+        location: "docs/superpowers/specs/2026-05-13-netsuite-obsidian-rag-design.md:283-288"
+        description: "Requires conflicting facts to be listed with sources and not forcibly merged; existing priority is project-specific, active, and newer material."
+        language: markdown
+      - element: "answer structure"
+        type: pattern
+        location: "docs/superpowers/specs/2026-05-13-netsuite-obsidian-rag-design.md:290-296"
+        description: "Requires direct conclusion first, then details, with separate direct answer and background."
+        language: markdown
+    lines: 468
+  - file: "README.md"
+    path: "README.md"
+    purpose: "Current user-facing MCP usage summary."
+    key_elements:
+      - element: "ask workflow"
+        type: pattern
+        location: "README.md:14"
+        description: "States that Copilot should call `ask_netsuite_rag` and answer using returned `context_blocks`, `sources`, and `answer_policy`."
+        language: markdown
+    lines: 14
+  - file: "sources.yaml"
+    path: "rag/sources.yaml"
+    purpose: "Current single-source indexing config."
+    key_elements:
+      - element: "include/exclude"
+        type: variable
+        location: "rag/sources.yaml:1-8"
+        description: "Config includes `projects` and `knowledge`, and excludes `.git`, `.obsidian`, `.superpowers`, and `.rag-index`."
+        language: yaml
+      - element: "collection settings"
+        type: variable
+        location: "rag/sources.yaml:9-11"
+        description: "Config uses `.rag-index/chroma`, `netsuite_notes`, and a multilingual MiniLM sentence-transformers model."
+        language: yaml
+    lines: 11
+  - file: "config.py"
+    path: "src/netsuite_rag_mcp/config.py"
+    purpose: "Loads the current source config into runtime paths and settings."
+    key_elements:
+      - element: "DEFAULT_INCLUDE"
+        type: variable
+        location: "src/netsuite_rag_mcp/config.py:8"
+        description: "Default included paths are `projects` and `knowledge`."
+        language: python
+      - element: "load_config"
+        type: function
+        location: "src/netsuite_rag_mcp/config.py:15-42"
+        description: "Resolves root, include paths, excluded names, Chroma path, collection name, and embedding model."
+        language: python
+    lines: 42
+  - file: "indexer.py"
+    path: "src/netsuite_rag_mcp/indexer.py"
+    purpose: "Indexes currently configured Markdown notes."
+    key_elements:
+      - element: "index_vault"
+        type: function
+        location: "src/netsuite_rag_mcp/indexer.py:21-128"
+        description: "Runs full/incremental indexing, parses Markdown, chunks documents, deletes old chunks by `doc_id`, upserts new chunks, and writes manifest entries."
+        language: python
+      - element: "_collect_markdown_files"
+        type: function
+        location: "src/netsuite_rag_mcp/indexer.py:131-156"
+        description: "Collects only `*.md` files from configured include paths."
+        language: python
+    lines: 180
+  - file: "retriever.py"
+    path: "src/netsuite_rag_mcp/retriever.py"
+    purpose: "Searches chunks and assembles context for Copilot."
+    key_elements:
+      - element: "search_netsuite_knowledge"
+        type: function
+        location: "src/netsuite_rag_mcp/retriever.py:11-47"
+        description: "Queries Chroma, applies metadata filters, redacts text, and returns `[Sx]` citation IDs."
+        language: python
+      - element: "ask_netsuite_rag"
+        type: function
+        location: "src/netsuite_rag_mcp/retriever.py:51-99"
+        description: "Builds context blocks, sources, answer policy, diagnostics, and a suggested response format."
+        language: python
+    lines: 99
+  - file: "policy.py"
+    path: "src/netsuite_rag_mcp/policy.py"
+    purpose: "Answer policy returned to Copilot."
+    key_elements:
+      - element: "citation rules"
+        type: function
+        location: "src/netsuite_rag_mcp/policy.py:9-14"
+        description: "Requires each key fact to cite a source ID from `sources`."
+        language: python
+      - element: "conflict rules"
+        type: function
+        location: "src/netsuite_rag_mcp/policy.py:16-19"
+        description: "Requires listing conflicts with sources and not forcibly merging conflicting information."
+        language: python
+      - element: "freshness rules"
+        type: function
+        location: "src/netsuite_rag_mcp/policy.py:32-34"
+        description: "Requires answers to include `updated_at`, dates, versions, or status when present and warn when material may be old."
+        language: python
+    lines: 51
+  - file: "metadata.py"
+    path: "src/netsuite_rag_mcp/metadata.py"
+    purpose: "Serializes metadata and applies filters."
+    key_elements:
+      - element: "to_chroma_metadata/from_chroma_metadata"
+        type: function
+        location: "src/netsuite_rag_mcp/metadata.py:9-38"
+        description: "Converts list metadata to JSON/text fields and restores known array fields after Chroma reads."
+        language: python
+      - element: "metadata_matches_filters"
+        type: function
+        location: "src/netsuite_rag_mcp/metadata.py:40-49"
+        description: "Supports exact scalar matches and all-values-present list matches."
+        language: python
+    lines: 54
+  - file: "server.py"
+    path: "src/netsuite_rag_mcp/server.py"
+    purpose: "MCP tool surface and current filter model."
+    key_elements:
+      - element: "_build_filters"
+        type: function
+        location: "src/netsuite_rag_mcp/server.py:89-108"
+        description: "Current filters cover project, script type, related records, related script IDs, object type, and status."
+        language: python
+      - element: "ask_netsuite_rag tool"
+        type: function
+        location: "src/netsuite_rag_mcp/server.py:136-154"
+        description: "Exposes RAG context, sources, and policy as an MCP tool for Copilot."
+        language: python
+    lines: 154
+  - file: "test_indexer_retriever.py"
+    path: "tests/test_indexer_retriever.py"
+    purpose: "Regression examples for retrieval, citations, and context assembly."
+    key_elements:
+      - element: "test_search_filters_by_metadata"
+        type: function
+        location: "tests/test_indexer_retriever.py:121-136"
+        description: "Asserts retrieved results include citation ID `S1` and script metadata."
+        language: python
+      - element: "test_ask_netsuite_rag_returns_policy_context"
+        type: function
+        location: "tests/test_indexer_retriever.py:139-156"
+        description: "Asserts `ask_netsuite_rag` returns policy context and a source path for citations."
+        language: python
+    lines: 156
+patterns_found:
+  - category: architecture
+    pattern: "Current RAG answer path already separates retrieval context from final generation."
+    description: "Copilot calls a local MCP tool; the tool returns context, sources, policy, and diagnostics; Copilot generates the final answer from those returned structures."
+    examples:
+      - file: "README.md"
+        location: "README.md:14"
+        snippet: "answer using only returned `context_blocks`, `sources`, and `answer_policy`"
+      - file: "src/netsuite_rag_mcp/retriever.py"
+        location: "src/netsuite_rag_mcp/retriever.py:82-99"
+        snippet: "answer_policy, context_blocks, sources, answer_diagnostics, suggested_response_format"
+    prevalence: common
+  - category: architecture
+    pattern: "Citations use stable `[Sx]` IDs with a separate source mapping."
+    description: "Search results and context sources carry `citation_id`; source entries currently include path, heading, doc ID, chunk index, and update time."
+    examples:
+      - file: "src/netsuite_rag_mcp/retriever.py"
+        location: "src/netsuite_rag_mcp/retriever.py:39-45"
+        snippet: "citation_id: f\"S{index + 1}\""
+      - file: "src/netsuite_rag_mcp/retriever.py"
+        location: "src/netsuite_rag_mcp/retriever.py:73-78"
+        snippet: "source_path, heading, doc_id, chunk_index, updated_at"
+    prevalence: common
+  - category: architecture
+    pattern: "Existing metadata filters are note-centric."
+    description: "The MCP filter builder covers NetSuite note metadata but does not yet cover source kind, repo, language, symbol, authority, line range, or freshness."
+    examples:
+      - file: "src/netsuite_rag_mcp/server.py"
+        location: "src/netsuite_rag_mcp/server.py:89-108"
+        snippet: "project, script_type, related_records, related_script_ids, object_type, status"
+      - file: "docs/plan/20260514-dual-source-rag-design-export/research_findings_RAG 工作区优化.yaml"
+        location: "docs/plan/20260514-dual-source-rag-design-export/research_findings_RAG 工作区优化.yaml:607-614"
+        snippet: "source_type, source_id, repo_id, language, symbol_name, authority, updated_after"
+    prevalence: common
+  - category: error_handling
+    pattern: "Conflict handling is explicit rather than silent merge."
+    description: "The answer policy requires listing conflicting claims with sources and says not to forcibly merge conflicts."
+    examples:
+      - file: "src/netsuite_rag_mcp/policy.py"
+        location: "src/netsuite_rag_mcp/policy.py:16-19"
+        snippet: "列出冲突点和各自来源 / 不要强行合并冲突信息"
+      - file: "docs/superpowers/specs/2026-05-13-netsuite-obsidian-rag-design.md"
+        location: "docs/superpowers/specs/2026-05-13-netsuite-obsidian-rag-design.md:283-288"
+        snippet: "冲突时列出不同说法和各自来源"
+    prevalence: common
+  - category: structure
+    pattern: "Prior dual-source research distinguishes curated context from source-of-truth implementation."
+    description: "The existing research material assigns curated Obsidian notes to business/context knowledge and local code repos to implementation facts."
+    examples:
+      - file: "docs/plan/20260514-dual-source-rag-design-export/research_findings_RAG 工作区优化.yaml"
+        location: "docs/plan/20260514-dual-source-rag-design-export/research_findings_RAG 工作区优化.yaml:440-448"
+        snippet: "Obsidian notes source ... NetSuite code repos source"
+      - file: "docs/plan/20260514-dual-source-rag-design-export/research_findings_Obsidian workspace optimization.yaml"
+        location: "docs/plan/20260514-dual-source-rag-design-export/research_findings_Obsidian workspace optimization.yaml:7-12"
+        snippet: "Obsidian is not a code mirror"
+    prevalence: common
+related_architecture:
+  components_relevant_to_domain:
+    - component: "Copilot model"
+      responsibility: "Receives RAG context, source mappings, and answer policy, then generates the final answer."
+      location: "README.md:14; docs/superpowers/specs/2026-05-13-netsuite-obsidian-rag-design.md:231-245"
+      relationship_to_domain: "Final answer must follow dual-source conflict and citation policy."
+    - component: "MCP server"
+      responsibility: "Exposes controlled index, search, ask, and status tools."
+      location: "src/netsuite_rag_mcp/server.py:111-154"
+      relationship_to_domain: "Query routing parameters would enter through this tool boundary."
+    - component: "retriever/context builder"
+      responsibility: "Queries candidates, applies filters, redacts text, builds context blocks, source list, diagnostics, policy, and suggested format."
+      location: "src/netsuite_rag_mcp/retriever.py:11-99"
+      relationship_to_domain: "This is the natural layer for retrieval routing output, merge preparation, citation shaping, and conflict diagnostics."
+    - component: "metadata filter layer"
+      responsibility: "Applies exact scalar and list metadata filters after vector retrieval."
+      location: "src/netsuite_rag_mcp/metadata.py:40-49"
+      relationship_to_domain: "Dual-source routing depends on source_kind/source_type, authority, repo, language, symbol, and freshness metadata."
+    - component: "answer policy"
+      responsibility: "Constrains final answers to returned context, requires citations, handles conflicts, and manages freshness and safety."
+      location: "src/netsuite_rag_mcp/policy.py:4-51"
+      relationship_to_domain: "Dual-source conflict rules extend the existing conflict and freshness rules."
+  interfaces_used_by_domain:
+    - interface: "context_blocks"
+      location: "src/netsuite_rag_mcp/retriever.py:58-69"
+      usage_pattern: "Each retrieved chunk is passed to Copilot with citation ID, text, and metadata."
+    - interface: "sources"
+      location: "src/netsuite_rag_mcp/retriever.py:70-79"
+      usage_pattern: "Citation lookup table for path, heading, doc ID, chunk index, and updated time; dual-source export adds `source_kind`."
+    - interface: "answer_policy"
+      location: "src/netsuite_rag_mcp/policy.py:4-51"
+      usage_pattern: "Text policy read by Copilot to enforce citations, conflicts, uncertainty, freshness, and safety."
+    - interface: "metadata filters"
+      location: "src/netsuite_rag_mcp/server.py:89-108; src/netsuite_rag_mcp/metadata.py:40-49"
+      usage_pattern: "Question routing becomes filter construction and retrieval fanout across notes/code."
+  data_flow_involving_domain: "User question -> Copilot calls `ask_netsuite_rag` -> routing classifies intent as note/code/mixed -> retriever queries candidates with metadata filters -> context builder normalizes source_kind/path/freshness -> merge/conflict policy selects or separates claims -> Copilot returns structured answer with `[Sx]` citations and source list."
+  key_relationships_to_domain:
+    - from: "server.ask_netsuite_rag"
+      to: "retriever.ask_netsuite_rag"
+      relationship: calls
+    - from: "retriever.ask_netsuite_rag"
+      to: "retriever.search_netsuite_knowledge"
+      relationship: calls
+    - from: "retriever.search_netsuite_knowledge"
+      to: "metadata.metadata_matches_filters"
+      relationship: calls
+    - from: "retriever.ask_netsuite_rag"
+      to: "policy.build_answer_policy"
+      relationship: calls
+    - from: "retriever.ask_netsuite_rag"
+      to: "Copilot final answer generation"
+      relationship: composes
+related_technology_stack:
+  languages_used_in_domain:
+    - python
+    - yaml
+    - markdown
+  frameworks_used_in_domain:
+    - name: "FastMCP / MCP Python SDK"
+      usage_in_domain: "Local tool surface for Copilot to call indexing, search, and ask operations."
+    - name: "pytest"
+      usage_in_domain: "Regression coverage for metadata filters, retrieval citations, policy context, and redaction."
+  libraries_used_in_domain:
+    - name: "ChromaDB"
+      purpose_in_domain: "Persistent local vector store queried by retriever."
+    - name: "sentence-transformers"
+      purpose_in_domain: "Embedding model wrapper for note chunks and query text."
+    - name: "PyYAML"
+      purpose_in_domain: "Loads source config and Markdown frontmatter."
+  external_apis_used_in_domain:
+    - name: "VS Code Copilot MCP tool calls"
+      integration_point: "Copilot calls local MCP tools and receives context/policy/sources for final response generation."
+related_conventions:
+  naming_patterns_in_domain: "Current code uses `source_path`, `citation_id`, `updated_at`, and snake_case metadata fields; prior dual-source research used `source_type`, while this export uses user-facing `source_kind=note|code` for citations."
+  structure_of_domain: "Current source config is Markdown-oriented with `projects` and `knowledge`; prior research identifies a future typed source registry for notes and code repos."
+  error_handling_in_domain: "Current policy lists conflicts instead of merging them, exposes uncertainty, and requires freshness/status when present."
+  testing_in_domain: "Tests assert citation IDs, source paths, filter behavior, policy presence, and redaction; there are no implemented dual-source routing tests yet."
+  documentation_in_domain: "Original design already documents query path, citation rules, conflict handling, answer structure, and component boundaries; this file narrows those into export-ready dual-source answer design."
+related_dependencies:
+  internal:
+    - component: "server -> retriever"
+      relationship_to_domain: "MCP ask/search tools delegate retrieval and context assembly to retriever functions."
+      direction: outbound
+    - component: "retriever -> metadata"
+      relationship_to_domain: "Retriever uses metadata filters, which are the mechanism for source_kind/source_type routing."
+      direction: outbound
+    - component: "retriever -> policy"
+      relationship_to_domain: "Retriever returns policy text that constrains final note/code merge and conflict handling."
+      direction: outbound
+    - component: "indexer -> vector_store"
+      relationship_to_domain: "Indexed chunks and metadata are persisted in Chroma; dual-source citation quality depends on chunk metadata."
+      direction: outbound
+  external:
+    - name: "ChromaDB"
+      purpose_for_domain: "Nearest-neighbor candidate retrieval before source-kind filtering and merge policy."
+    - name: "VS Code Copilot"
+      purpose_for_domain: "Final answer generator that consumes returned context, sources, and policy."
+    - name: "Local NetSuite code repositories"
+      purpose_for_domain: "Authoritative source for implementation facts in the requested dual-source design."
+domain_security_considerations:
+  sensitive_areas:
+    - area: "Code snippets returned to model"
+      location: "user_request; src/netsuite_rag_mcp/redaction.py:5-22"
+      concern: "Code repositories may contain credentials or sensitive values; current retrieval redacts returned text, but pre-index code secret scanning is not implemented."
+    - area: "Conflict answers"
+      location: "src/netsuite_rag_mcp/policy.py:16-19"
+      concern: "Conflicts must be surfaced with sources instead of hidden by a silent priority rule."
+    - area: "Citation path disclosure"
+      location: "src/netsuite_rag_mcp/retriever.py:73-78"
+      concern: "Source paths are intentionally exposed for traceability; exported citation format should avoid exposing absolute local roots when not needed."
+  authentication_patterns_in_domain: "No authentication layer is implemented in the local prototype; MCP tools resolve a local vault root from input, environment, or current working directory."
+  authorization_patterns_in_domain: "No multi-user authorization is implemented; the original MVP excludes team deployment and permission systems."
+  data_validation_in_domain: "Current tool mode validates full/incremental index mode; metadata filters are built from known non-empty fields; config uses `yaml.safe_load`."
+testing_patterns:
+  framework: "pytest"
+  coverage_areas:
+    - "metadata serialization and filtering"
+    - "retrieval citation IDs and source paths"
+    - "answer policy returned in context"
+    - "redaction before output"
+    - "index full/incremental behavior"
+  test_organization: "Focused subsystem tests under `tests/`; retrieval tests construct temporary vaults and fake embeddings."
+  mock_patterns:
+    - "`FakeEmbedder` creates deterministic search vectors."
+    - "Temporary `rag/sources.yaml` files define test source config."
+export_document_material:
+  query_flow:
+    concise_copy: |
+      Query flow: the user asks in Copilot; Copilot calls the local RAG MCP ask tool; the retriever classifies the question as note-led, code-led, or mixed; it searches the selected sources with metadata filters; the context builder normalizes snippets into `context_blocks` and a `sources` list; the merge policy resolves note/code roles and conflicts; Copilot answers with inline `[Sx]` citations and a source list.
+    steps:
+      - "User question in VS Code Copilot."
+      - "Copilot calls `ask_netsuite_rag`."
+      - "Route by intent and metadata: business/rationale/troubleshooting -> notes; implementation/config/code behavior -> code; mixed -> both."
+      - "Retrieve top candidates, apply source/entity/freshness filters, redact returned text."
+      - "Merge by entity and fact type, detect conflicts, attach citation IDs."
+      - "Generate answer with direct conclusion, evidence, conflicts/staleness, and sources."
+    source_refs:
+      - "docs/superpowers/specs/2026-05-13-netsuite-obsidian-rag-design.md:231-245"
+      - "README.md:14"
+      - "src/netsuite_rag_mcp/retriever.py:51-99"
+  retrieval_routing:
+    concise_copy: |
+      Route by the fact being asked for, not only by keyword. Business meaning, rationale, requirements, decisions, and troubleshooting are note-led. Current parameters, deployed IDs, module dependencies, code paths, function behavior, and line-level implementation are code-led. Mixed questions run both routes and keep source roles visible in the answer.
+    routes:
+      - route: "note_led"
+        triggers: ["business meaning", "rationale", "requirement", "decision", "troubleshooting", "known issue", "why"]
+        primary_source_kind: "note"
+        secondary_source_kind: "code only when implementation facts are referenced"
+      - route: "code_led"
+        triggers: ["current behavior", "parameter", "script_id", "deployment_id", "module dependency", "function", "line", "actual implementation"]
+        primary_source_kind: "code"
+        secondary_source_kind: "note for business context or historical explanation"
+      - route: "mixed"
+        triggers: ["how does it work and why", "impact analysis", "bug explanation", "implementation plus rationale"]
+        primary_source_kind: "note and code"
+        secondary_source_kind: "none"
+    filter_fields_for_export:
+      - "source_kind: note|code"
+      - "project"
+      - "script_id / deployment_id / object_id"
+      - "repo_id / language / symbol_name"
+      - "status / updated_at / indexed_at"
+    source_refs:
+      - "src/netsuite_rag_mcp/server.py:89-108"
+      - "src/netsuite_rag_mcp/metadata.py:40-49"
+      - "docs/plan/20260514-dual-source-rag-design-export/research_findings_RAG 工作区优化.yaml:594-646"
+  merge_policy_for_notes_code:
+    concise_copy: |
+      Merge notes and code by entity first, then by fact type. Use shared anchors such as project, script ID, deployment ID, object ID, repo path, symbol, and related records. Do not copy code into notes to make the answer convenient; keep code snippets bounded and cite the code path directly.
+    rules:
+      - "Group retrieved snippets by entity: project, script_id, deployment_id, object_id, repo_path, symbol_name, related_records."
+      - "For implementation facts, prefer `source_kind=code`; include notes only as context or if they independently match the code fact."
+      - "For business meaning, rationale, requirement background, decisions, and troubleshooting history, prefer `source_kind=note`."
+      - "When note and code support different parts of the answer, keep them in separate answer sections rather than forcing one combined claim."
+      - "When both support the same claim, cite both code and note citations."
+    source_refs:
+      - "user_request: Notes = business meaning/rationale/troubleshooting; Code = latest implementation facts."
+      - "docs/plan/20260514-dual-source-rag-design-export/research_findings_Obsidian workspace optimization.yaml:7-12"
+      - "docs/plan/20260514-dual-source-rag-design-export/research_findings_RAG 工作区优化.yaml:440-448"
+  citation_format:
+    concise_copy: |
+      Inline facts cite `[S1]`, `[S2]`, etc. The source list must include `source_kind` and path so readers can tell whether a fact came from curated notes or current code.
+    inline_format: "关键事实 [S1]"
+    source_list_format:
+      note: "[S1] source_kind=note path=projects/project-a/scripts/restlet/order-sync.md heading=相关脚本 updated_at=2026-05-14"
+      code: "[S2] source_kind=code path=repos/project-a/src/restlets/order-sync-restlet.js#L42-L55 symbol=post updated_at=2026-05-14 git_commit=<commit-or-dirty>"
+    required_fields:
+      - "citation_id"
+      - "source_kind"
+      - "path"
+      - "heading or symbol_name when available"
+      - "line_start/line_end for code when available"
+      - "updated_at or indexed_at"
+    source_refs:
+      - "src/netsuite_rag_mcp/retriever.py:39-45"
+      - "src/netsuite_rag_mcp/retriever.py:73-78"
+      - "docs/superpowers/specs/2026-05-13-netsuite-obsidian-rag-design.md:274-281"
+      - "user_request: Answers cite source_kind + path."
+  conflict_policy:
+    concise_copy: |
+      Classify the conflict before choosing a winner. Code wins for current implementation facts. Notes win for business meaning, rationale, requirements, decisions, and troubleshooting unless the note is stale. If the conflict cannot be safely classified, list both claims with citations and mark the answer as uncertain.
+    rules:
+      - conflict_type: "implementation_fact"
+        examples: ["actual parameter", "script_id", "deployment_id", "module dependency", "current function behavior", "field read/write in code"]
+        winner: "source_kind=code"
+        required_answer_behavior: "State the code-backed fact first, then mention contradictory note text as stale or conflicting if relevant."
+      - conflict_type: "business_or_rationale"
+        examples: ["why this flow exists", "business purpose", "requirement background", "troubleshooting lesson", "decision reason"]
+        winner: "source_kind=note unless stale"
+        required_answer_behavior: "Use the note-backed rationale; code can support observed behavior but not invent intent."
+      - conflict_type: "freshness_or_status"
+        examples: ["active vs inactive", "old note vs newer code", "superseded decision", "changed object/config"]
+        winner: "newer authoritative source for that fact type"
+        required_answer_behavior: "Mention status/date/update evidence and why one source is treated as fresher."
+      - conflict_type: "unclassified"
+        examples: ["ambiguous entity", "missing timestamp", "two notes disagree without code evidence"]
+        winner: "none"
+        required_answer_behavior: "List both claims and sources; do not merge into a single answer."
+    stale_note_indicators:
+      - "note status is inactive or superseded"
+      - "note updated_at is older than the relevant code commit/indexed_at and describes an implementation detail"
+      - "note copies code behavior that current code contradicts"
+      - "note lacks the entity anchor needed to match the current script/object/code path"
+    source_refs:
+      - "src/netsuite_rag_mcp/policy.py:16-19"
+      - "src/netsuite_rag_mcp/policy.py:32-34"
+      - "docs/superpowers/specs/2026-05-13-netsuite-obsidian-rag-design.md:283-288"
+      - "user_request: code wins for implementation facts; notes win for business/rationale unless stale."
+  answer_structure:
+    concise_copy: |
+      Use a predictable answer shape: direct answer first, then implementation facts, business/rationale or troubleshooting context, conflicts/staleness, and sources. Omit empty sections, but never omit sources for key facts.
+    sections:
+      - name: "结论"
+        content: "One or two sentences answering the user directly, with citations."
+      - name: "实现事实"
+        content: "Current code-backed behavior, IDs, paths, parameters, modules, and line-level facts."
+      - name: "业务/原因/排坑背景"
+        content: "Note-backed business meaning, rationale, requirements, decisions, troubleshooting, and caveats."
+      - name: "冲突与时效性"
+        content: "Only when triggered; list conflicting claims, source_kind/path, winner, and reason."
+      - name: "来源"
+        content: "Map each `[Sx]` to `source_kind`, path, heading/symbol, line range, and freshness fields."
+    source_refs:
+      - "src/netsuite_rag_mcp/retriever.py:94-98"
+      - "src/netsuite_rag_mcp/policy.py:21-27"
+      - "docs/superpowers/specs/2026-05-13-netsuite-obsidian-rag-design.md:290-296"
+  concrete_example:
+    question: "Order Sync RESTlet 是直接处理订单，还是提交 Map/Reduce？为什么？"
+    assumed_retrieved_sources:
+      - citation_id: "S1"
+        source_kind: "code"
+        path: "repos/project-a/src/restlets/order-sync-restlet.js#L42-L55"
+        fact: "RESTlet validates input, writes/returns tracking data, and submits `customscript_order_sync_mr`; no direct sales order processing is shown in this snippet."
+      - citation_id: "S2"
+        source_kind: "note"
+        path: "projects/project-a/scripts/restlet/order-sync.md#相关脚本"
+        fact: "The script note says the RESTlet submits `customscript_order_sync_mr` for order sync."
+      - citation_id: "S3"
+        source_kind: "note"
+        path: "projects/project-a/decisions/restlet-mapreduce-architecture.md#理由"
+        fact: "The decision note explains the rationale: RESTlet should acknowledge and delegate long-running work to Map/Reduce."
+    example_answer: |
+      结论：Order Sync RESTlet 不应被描述为直接完成订单处理；当前实现事实以代码为准，它提交 `customscript_order_sync_mr` 让 Map/Reduce 处理后续同步 [S1]。脚本说明也支持这一点 [S2]。
+
+      实现事实：代码来源显示 RESTlet 的职责是校验/登记请求并提交 Map/Reduce，而不是在 RESTlet 内完成全部订单处理 [S1]。
+
+      业务/原因背景：笔记中的设计理由是避免 RESTlet 承担长耗时处理，把异步批处理交给 Map/Reduce，便于追踪和补偿 [S3]。
+
+      冲突与时效性：如果旧笔记声称 RESTlet 直接处理订单，这属于实现事实冲突；应以代码来源 [S1] 为准，并把旧笔记标记为可能过期。
+
+      来源：
+      - [S1] source_kind=code path=repos/project-a/src/restlets/order-sync-restlet.js#L42-L55
+      - [S2] source_kind=note path=projects/project-a/scripts/restlet/order-sync.md#相关脚本
+      - [S3] source_kind=note path=projects/project-a/decisions/restlet-mapreduce-architecture.md#理由
+    source_refs:
+      - "tests/test_indexer_retriever.py:58-82"
+      - "tests/test_indexer_retriever.py:139-156"
+      - "user_request: concrete example requested; code path is illustrative because local code repos are not present in this workspace."
+open_questions:
+  - question: "What exact field name should the implementation expose: `source_kind`, existing research `source_type`, or both?"
+    context: "User requested citation with `source_kind + path`; prior research uses `source_type: note|code`."
+    type: nice_to_know
+    affects:
+      - "citation schema"
+      - "retrieval filters"
+  - question: "What timestamp should decide note staleness when code repo git metadata is unavailable or dirty?"
+    context: "Current notes use file mtime-derived `updated_at`; prior research proposes commit/dirty/content hash metadata for code repos."
+    type: research
+    affects:
+      - "conflict policy"
+      - "freshness diagnostics"
+  - question: "Should code and notes be searched in one collection with `source_kind` filters or separate collections with score normalization?"
+    context: "Current config has one Chroma collection; prior dual-source research keeps this as a research question."
+    type: research
+    affects:
+      - "retrieval routing"
+      - "ranking behavior"
+gaps:
+  - area: "source_kind metadata"
+    description: "Current retrieved `sources` include path, heading, doc ID, chunk index, and updated time, but no `source_kind` field."
+    impact: research_blocker
+    affects:
+      - "citation format"
+      - "note/code conflict policy"
+  - area: "code source ingestion"
+    description: "Current indexer scans only Markdown files and no code repo scanner/parser/symbol chunker exists."
+    impact: research_blocker
+    affects:
+      - "code-led routing"
+      - "implementation fact authority"
+  - area: "dual-source routing"
+    description: "Current MCP filters are note metadata only and do not include source kind, repo, language, symbol, line range, authority, or freshness."
+    impact: research_blocker
+    affects:
+      - "retrieval precision"
+      - "merge policy"
+  - area: "automated conflict diagnostics"
+    description: "Current policy instructs the model to list conflicts, but retriever does not compute conflict groups, winners, or stale-note flags."
+    impact: nice_to_know
+    affects:
+      - "answer diagnostics"
+      - "conflict transparency"
+  - area: "workspace sample sources"
+    description: "Configured `projects` and `knowledge` directories are absent from the current root listing, so example source paths are based on design/test fixtures rather than existing vault files."
+    impact: nice_to_know
+    affects:
+      - "example verification"
