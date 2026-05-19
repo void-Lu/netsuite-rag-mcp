@@ -185,6 +185,21 @@ def test_storage_paths_are_outside_vault_and_namespaced(tmp_path: Path):
     assert "vault-with-spaces" in runtime.vault_storage_id
 
 
+def test_legacy_hidden_storage_layout_uses_data_root_dot_dirs(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
+    vault = _make_vault(tmp_path / "Homework Vault")
+    data_root = tmp_path / "rag project"
+    monkeypatch.setenv("NETSUITE_RAG_STORAGE_LAYOUT", "legacy-hidden")
+
+    runtime = resolve_runtime_config(vault_root_arg=vault, data_root=data_root)
+
+    assert runtime.vault_data_root == data_root / ".rag-index"
+    assert runtime.chroma_path == data_root / ".rag-index" / "chroma"
+    assert runtime.manifest_path == data_root / ".rag-index" / "index-manifest.json"
+    assert runtime.embedding_cache_path == data_root / ".models"
+    assert not runtime.chroma_path.is_relative_to(vault)
+    assert not runtime.embedding_cache_path.is_relative_to(vault)
+
+
 def test_two_vaults_with_same_folder_name_get_different_storage_ids(tmp_path: Path):
     first = _make_vault(tmp_path / "client-a" / "homework")
     second = _make_vault(tmp_path / "client-b" / "homework")

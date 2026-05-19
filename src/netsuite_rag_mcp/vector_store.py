@@ -124,6 +124,30 @@ class ChromaVectorStore:
         if results["ids"]:
             self._collection.delete(ids=results["ids"])
 
+    @staticmethod
+    def _metadata_for_chunk(chunk: Chunk) -> dict[str, Any]:
+        """Return Chroma metadata with Chunk top-level fields included."""
+        metadata = dict(chunk.metadata)
+        metadata["doc_id"] = chunk.doc_id
+        metadata["chunk_index"] = chunk.chunk_index
+        metadata["source_path"] = chunk.source_path
+        metadata["heading"] = chunk.heading
+
+        if chunk.function_name or "function_name" not in metadata:
+            metadata["function_name"] = chunk.function_name
+        if chunk.line_start or "line_start" not in metadata:
+            metadata["line_start"] = chunk.line_start
+        if chunk.line_end or "line_end" not in metadata:
+            metadata["line_end"] = chunk.line_end
+        if chunk.source_kind != "note" or "source_kind" not in metadata:
+            metadata["source_kind"] = chunk.source_kind
+        if chunk.source_name or "source_name" not in metadata:
+            metadata["source_name"] = chunk.source_name
+        if chunk.file_hash or "file_hash" not in metadata:
+            metadata["file_hash"] = chunk.file_hash
+
+        return metadata
+
     def upsert_chunks(self, chunks: list[Chunk]) -> None:
         """Upsert chunks into the vector store.
 
@@ -139,7 +163,7 @@ class ChromaVectorStore:
         embeddings = self.embedder.embed(texts)
 
         # Convert metadata for Chroma storage
-        chroma_metadatas = [to_chroma_metadata(chunk.metadata) for chunk in chunks]
+        chroma_metadatas = [to_chroma_metadata(self._metadata_for_chunk(chunk)) for chunk in chunks]
 
         # Upsert into collection
         self._collection.upsert(

@@ -73,6 +73,41 @@ def test_vector_store_upsert_query_and_reset(tmp_path: Path):
     assert store.count() == 0
 
 
+def test_vector_store_persists_chunk_top_level_metadata_for_source_filters(tmp_path: Path):
+    store = ChromaVectorStore(tmp_path / "chroma", "test_notes", FakeEmbedder())
+    chunk = Chunk(
+        id="doc1:0",
+        doc_id="doc1",
+        chunk_index=0,
+        source_path="src/OrderSync.js",
+        heading="map",
+        text="Map/Reduce script customscript_order_sync_mr 处理订单。",
+        metadata={"type": "script", "project": "project-a"},
+        function_name="map",
+        line_start=10,
+        line_end=20,
+        source_kind="code",
+        source_name="netsuite_repo",
+        file_hash="abc123",
+    )
+
+    store.upsert_chunks([chunk])
+    results = store.query("订单", n_results=3, where={"source_kind": "code"})
+
+    assert len(results) == 1
+    metadata = results[0].metadata
+    assert metadata["doc_id"] == "doc1"
+    assert metadata["chunk_index"] == 0
+    assert metadata["source_path"] == "src/OrderSync.js"
+    assert metadata["heading"] == "map"
+    assert metadata["function_name"] == "map"
+    assert metadata["line_start"] == 10
+    assert metadata["line_end"] == 20
+    assert metadata["source_kind"] == "code"
+    assert metadata["source_name"] == "netsuite_repo"
+    assert metadata["file_hash"] == "abc123"
+
+
 def write_sources_config(vault: Path) -> None:
     (vault / "rag").mkdir(parents=True, exist_ok=True)
     (vault / "rag" / "sources.yaml").write_text(

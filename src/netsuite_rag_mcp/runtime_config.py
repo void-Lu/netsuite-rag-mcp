@@ -12,6 +12,7 @@ import yaml
 from netsuite_rag_mcp.platform_paths import global_config_path, user_data_dir
 
 VAULT_ROOT_ENV = "NETSUITE_RAG_VAULT_ROOT"
+STORAGE_LAYOUT_ENV = "NETSUITE_RAG_STORAGE_LAYOUT"
 
 
 class RuntimeConfigError(RuntimeError):
@@ -179,7 +180,13 @@ def resolve_runtime_config(
         raise _missing_sources_error(vault_root, sources_config_path)
 
     storage_id = vault_storage_id(vault_root)
-    vault_data_root = root_data / "vaults" / storage_id
+    storage_layout = os.environ.get(STORAGE_LAYOUT_ENV, "namespaced")
+    if storage_layout == "legacy-hidden":
+        vault_data_root = root_data / ".rag-index"
+        embedding_cache_path = root_data / ".models"
+    else:
+        vault_data_root = root_data / "vaults" / storage_id
+        embedding_cache_path = root_data / "models"
     return RuntimeConfig(
         vault_root=vault_root,
         vault_name=vault_name,
@@ -191,5 +198,5 @@ def resolve_runtime_config(
         vault_data_root=vault_data_root,
         chroma_path=vault_data_root / "chroma",
         manifest_path=vault_data_root / "index-manifest.json",
-        embedding_cache_path=root_data / "models",
+        embedding_cache_path=embedding_cache_path,
     )
