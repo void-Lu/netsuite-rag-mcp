@@ -9,6 +9,11 @@ dist/
 build/
 .eggs/
 
+# Local/generated project-adjacent content
+rag/
+docs/plan/
+docs/superpowers/
+
 # Virtual environment
 .venv/
 venv/
@@ -20,9 +25,8 @@ env/
 # Local embedding model cache (preloaded/regenerated locally)
 .models/
 
-# IDE (keep .vscode/mcp.json as dev template)
-.vscode/*
-!.vscode/mcp.json
+# IDE / local editor config
+.vscode/
 .idea/
 *.swp
 *.swo

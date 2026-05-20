@@ -33,18 +33,18 @@
 - **Git**
 - **VS Code** + Copilot 扩展
 
-### 步骤 1：克隆并安装到全局 MCP 使用的 Python
+### 步骤 1：克隆并安装到 MCP 使用的 Python
 
 ```powershell
 # 克隆仓库
 git clone https://github.com/void-Lu/netsuite-rag-mcp.git
 cd netsuite-rag-mcp
 
-# 安装到后续 user-level mcp.json 中 command 使用的同一个解释器
-C:\Python314\python.exe -m pip install -e ".[dev]"
+# 安装到当前 Python 环境
+python -m pip install -e ".[dev]"
 ```
 
-> 如果你的 Python 路径不是 `C:\Python314\python.exe`，请同时替换上面的安装命令和后续 `mcp.json` 的 `command`。关键点是：VS Code user-level MCP config 中启动 server 的解释器，必须已经安装了 `netsuite-rag-mcp`。
+> 关键点是：VS Code user-level MCP config 中启动 server 的 Python，必须已经安装了 `netsuite-rag-mcp`。如果你使用虚拟环境，请先激活虚拟环境后再安装，并确保 VS Code MCP 启动时能找到同一个环境。
 
 虚拟环境适合本仓库开发和运行测试；全局 MCP 配置不要指向工作区变量或项目 `.venv`，也不要依赖只安装在项目 `.venv` 里的包。
 
@@ -54,9 +54,9 @@ C:\Python314\python.exe -m pip install -e ".[dev]"
 - `netsuite-rag-mcp-server` — 显式启动 MCP stdio server。
 - `netsuite-rag-mcp-preload-model` — 预下载 embedding 模型到用户本地缓存。
 
-### 步骤 2：配置数据源
+### 步骤 2：配置 Vault 数据源
 
-编辑 `rag/sources.yaml`，支持 v2 多数据源配置：
+在 Obsidian Vault 根目录内编辑 `rag/sources.yaml`，支持 v2 多数据源配置。源码仓库不再保留这个文件；它是每个 Vault 的本地数据源声明。
 
 ```yaml
 schema_version: 2
@@ -106,16 +106,15 @@ sources:
   #   authority: implementation_source_of_truth
 ```
 
-> 💡 旧的 v1 扁平格式配置会自动迁移到 v2 格式，无需手动修改。
-
 ### 步骤 3：初始化全局 MCP 配置
 
-### Global MCP setup summary
+### 全局 MCP 配置摘要
 
-- Vault keeps human-authored notes + `rag/sources.yaml`。
-- Generated state (`.rag-index/`、`.models/`) lives inside the vault (vault-local layout).
-- Use VS Code user-level MCP config, not workspace `.vscode/mcp.json`.
-- global mcp.json does not hardcode vault path.
+- Vault 只保留人工维护的笔记和 `rag/sources.yaml`。
+- 生成状态（`.rag-index/`、`.models/`）位于 Vault 内，即 Vault 本地布局。
+- 使用 VS Code 用户级 MCP 配置，不使用工作区 `.vscode/mcp.json`。
+- 全局 `mcp.json` 不硬编码 Vault 路径。
+- 源码仓库不提供根目录 `rag/sources.yaml`；请在已配置的 Vault 下创建或编辑该文件。
 
 先在本机运行一次初始化命令，把 Obsidian Vault 的绝对路径写入用户级配置文件：
 
@@ -154,16 +153,16 @@ netsuite-rag-mcp-preload-model
   "servers": {
     "netsuite-obsidian-rag": {
       "type": "stdio",
-      "command": "C:\\Python314\\python.exe",
+      "command": "python",
       "args": ["-m", "netsuite_rag_mcp.server"]
     }
   }
 }
 ```
 
-也可以在终端或 MCP 客户端中使用 `netsuite-rag-mcp-server` 作为显式 server 入口；上面的 Python module 写法在 Windows 上更容易表达固定解释器路径。
+也可以在终端或 MCP 客户端中使用 `netsuite-rag-mcp-server` 作为显式 server 入口；上面的 Python module 写法更容易确认 server 来自已安装的 `netsuite-rag-mcp` 包。
 
-> 💡 **开发者提示**：本仓库包含 `.vscode/mcp.json` 作为开发模板，使用 VS Code 工作区变量指向本地 `.venv`。该配置不含绝对路径，仅供本地开发调试使用。生产部署请使用上述 user-level MCP config。
+> 💡 **开发者提示**：本仓库不提交 workspace `.vscode/mcp.json` 或根目录 `rag/sources.yaml`。如需本地开发调试，可在自己的工作区创建未跟踪的 `.vscode/mcp.json`；正式使用请配置上述 VS Code user-level MCP config。
 
 ### 步骤 5：重新加载 VS Code
 
@@ -244,10 +243,8 @@ netsuite-rag-mcp-preload-model
 多数模板共享以下元数据过滤字段：
 
 - `project` — 项目名称
-- `status` — active / inactive
+- `status` — `active` / `inactive`（激活 / 停用）
 - `tags` — 标签列表
-
-> ⚠️ **字段名变更**：`related_script_ids` 已更名为 `related_scripts`，`related_records` 已更名为 `related_objects`。
 
 ## 🧪 运行测试
 
@@ -260,8 +257,6 @@ pytest
 
 ```text
 .
-├── rag/
-│   └── sources.yaml                       # 数据源配置（v2 多源 schema）
 ├── src/netsuite_rag_mcp/
 │   ├── __init__.py
 │   ├── server.py                          # FastMCP 服务器入口（6 个 MCP 工具）
@@ -304,11 +299,12 @@ pytest
 │   ├── decision-note.md                    # 技术决策模板
 │   └── knowledge-note.md                   # 知识笔记模板
 ├── tests/                                  # 测试用例
-├── docs/plan/                              # 实施计划
 ├── pyproject.toml                          # 项目配置 + 依赖
 ├── .gitignore
 └── README.md
 ```
+
+Vault 数据源配置位于已初始化的 Obsidian Vault 内：`<Vault>/rag/sources.yaml`。本仓库不提交 `rag/`、`.vscode/`、`docs/plan/` 或 `docs/superpowers/` 等本地/计划导出目录。
 
 ## ❓ 常见问题
 
@@ -360,6 +356,6 @@ A: 使用 `full` 模式，会清除旧索引并从头构建：
 请调用 index_vault，mode 设为 "full"
 ```
 
-## 📄 License
+## 📄 许可证
 
 MIT
