@@ -1,4 +1,3 @@
-import re
 from pathlib import Path
 
 
@@ -10,12 +9,12 @@ def test_readme_documents_global_mcp_storage_split():
     assert "netsuite-rag-mcp-server" in text
     assert "netsuite-rag-mcp-preload-model" in text
     assert '"args": ["-m", "netsuite_rag_mcp.server"]' in text
-    assert "VS Code user-level MCP config" in text
-    assert "not workspace `.vscode/mcp.json`" in text
-    assert "global mcp.json does not hardcode vault path" in text
+    assert "VS Code 用户级 MCP 配置" in text
+    assert "不使用工作区 `.vscode/mcp.json`" in text
+    assert "全局 `mcp.json` 不硬编码 Vault 路径" in text
     assert ".rag-index/" in text
     assert ".models/" in text
-    assert "vault-local" in text
+    assert "Vault 本地布局" in text
 
     assert "将 `.vscode/mcp.json` 中的路径" not in text
     assert "${workspaceFolder}" not in text
@@ -35,13 +34,23 @@ def test_repository_mcp_config_has_no_absolute_paths():
     assert "NETSUITE_RAG_VAULT_ROOT" not in text
 
 
-def test_root_sources_yaml_omits_generated_state_paths():
-    text = Path("rag/sources.yaml").read_text(encoding="utf-8")
+def test_repository_does_not_ship_vault_sources_yaml():
+    assert not Path("rag/sources.yaml").exists()
 
-    assert "chroma_path:" not in text
-    assert "embedding_cache_path:" not in text
-    assert "embedding_model: BAAI/bge-m3" in text
-    assert "default: netsuite_knowledge" in text
+
+def test_local_artifact_and_planning_paths_are_ignored():
+    text = Path(".gitignore").read_text(encoding="utf-8")
+
+    for pattern in [
+        "rag/",
+        "docs/plan/",
+        "docs/superpowers/",
+        ".vscode/",
+        ".pytest_cache/",
+        ".venv/",
+        "*.egg-info/",
+    ]:
+        assert pattern in text
 
 
 def test_preload_guidance_comes_after_vault_initialization():
@@ -53,21 +62,12 @@ def test_preload_guidance_comes_after_vault_initialization():
     assert preload_command_position > init_position
 
 
-def test_readme_global_mcp_interpreter_matches_install_interpreter():
+def test_readme_avoids_machine_specific_python_paths_and_history_notes():
     text = Path("README.md").read_text(encoding="utf-8")
 
-    command_match = re.search(r'"command": "(?P<command>(?:[^"\\]|\\.)+)"', text)
-    assert command_match is not None
-
-    mcp_command = command_match.group("command")
-    powershell_command = mcp_command.replace("\\\\", "\\")
-    assert f'{powershell_command} -m pip install -e ".[dev]"' in text or (
-        f'{powershell_command} must have `netsuite-rag-mcp` installed' in text
-    )
-
-    venv_install = re.search(
-        r"python -m venv \.venv[\s\S]{0,500}?pip install -e \"\.\[dev\]\"[\s\S]{0,500}?mcp\.json",
-        text,
-        flags=re.IGNORECASE,
-    )
-    assert venv_install is None
+    assert "C:\\Python" not in text
+    assert "python.exe -m pip install" not in text
+    assert '"command": "python"' in text
+    assert "字段名变更" not in text
+    assert "related_script_ids" not in text
+    assert "related_records" not in text

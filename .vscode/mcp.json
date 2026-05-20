@@ -1,9 +1,0 @@
-{
-  "servers": {
-    "netsuite-obsidian-rag": {
-      "type": "stdio",
-      "command": "${workspaceFolder}\\.venv\\Scripts\\python.exe",
-      "args": ["-m", "netsuite_rag_mcp.server"]
-    }
-  }
-}
